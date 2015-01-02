@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Files changed in the same commit</title>
+    <link rel="stylesheet" type="text/css" href="stylesheets/common.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/force-graph.css">
+</head>
+<body class="force-graph-body">
+<script src="js/d3.v3.min.js"></script>
+<script src="js/underscore-min.js"></script>
+<script src="common.js"></script>
+<script src="force-graph.js"></script>
+<span id="files-in-the-same-commit" class="force-graph"></span>
+<script>
+    const filesInTheSameCommitGraph = {
+        /*data_placeholder*/
+        "nodes": [
+            {"name": "/src/MyArtifactRepository.java", "group": 1},
+            {"name": "/src/AbstractGradleUserProjectChange.java", "group": 1},
+            {"name": "/src/MavenExternalParameters.java", "group": 1},
+            {"name": "/src/resource.h", "group": 1},
+            {"name": "/src/MavenArtifactResolvedM2RtMarker.java", "group": 1},
+            {"name": "/src/PsiResolveHelperImpl.java", "group": 1},
+            {"name": "/src/WinLauncher.vcxproj.filters", "group": 1},
+            {"name": "/src/GradleLocalSettings.java", "group": 1},
+            {"name": "/src/HgUpdateToDialog.java", "group": 1},
+            {"name": "/src/modules.xml", "group": 1},
+            {"name": "/src/GraphInferencePolicy.java", "group": 1},
+            {"name": "/src/ProcessCandidateParameterTypeInferencePolicy.java", "group": 1},
+            {"name": "/src/MavenArtifactResolvedM3RtMarker.java", "group": 1},
+            {"name": "/src/ExtensionPointCandidate.java", "group": 1},
+            {"name": "/src/GradleUserProjectChange.java", "group": 1},
+            {"name": "/src/WinLauncher.cpp", "group": 1},
+            {"name": "/src/NameUtilTest.java", "group": 1},
+            {"name": "/src/components.xml", "group": 1},
+            {"name": "/src/IconResourceInjector.java", "group": 1},
+            {"name": "/src/MavenModuleMap.java", "group": 1},
+            {"name": "/src/ToolWindowHeadlessManagerImpl.java", "group": 1},
+            {"name": "/src/GroovyAnnotator.java", "group": 1},
+            {"name": "/src/MavenRunnerParametersConfigurable.form", "group": 1},
+            {"name": "/src/GroovyHighlightingTest.groovy", "group": 1},
+            {"name": "/src/layouts.gant", "group": 1},
+            {"name": "/src/MinusculeMatcher.java", "group": 1},
+            {"name": "/src/LauncherGeneratorMain.java", "group": 1},
+            {"name": "/src/LauncherGenerator.java", "group": 1},
+            {"name": "/src/EncodingUtil.java", "group": 1},
+            {"name": "/src/JavaFxPsiUtil.java", "group": 1},
+            {"name": "/src/WinLauncher.vcxproj", "group": 1},
+            {"name": "/src/GradleUserProjectChangesCalculator.java", "group": 1},
+            {"name": "/src/maven-artifact-resolver-m2.iml", "group": 1},
+            {"name": "/src/JavaFXHighlightingTest.java", "group": 1},
+            {"name": "/src/ToolWindow.java", "group": 1},
+            {"name": "/src/MyArtifactResolver.java", "group": 1},
+            {"name": "/src/GroovyBundle.properties", "group": 1},
+            {"name": "/src/MavenRunnerParameters.java", "group": 1},
+            {"name": "/src/MavenRunnerParametersConfigurable.java", "group": 1},
+            {"name": "/src/maven.iml", "group": 1},
+            {"name": "/src/EncodingProjectManagerImpl.java", "group": 1},
+            {"name": "/src/WinLauncher.rc", "group": 1},
+            {"name": "/src/MyWorkspaceReader.java", "group": 1},
+            {"name": "/src/MavenUtil.java", "group": 1},
+            {"name": "/src/RegisterExtensionFix.java", "group": 1},
+            {"name": "/src/HgMergeDialog.java", "group": 1},
+            {"name": "/src/maven-artifact-resolver-m3.iml", "group": 1}
+        ],
+        "links": [
+            {"source": 41, "target": 30, "value": 7},
+            {"source": 25, "target": 16, "value": 16},
+            {"source": 11, "target": 5, "value": 16},
+            {"source": 15, "target": 41, "value": 16},
+            {"source": 21, "target": 23, "value": 15},
+            {"source": 30, "target": 6, "value": 15},
+            {"source": 21, "target": 36, "value": 14},
+            {"source": 7, "target": 31, "value": 14},
+            {"source": 27, "target": 26, "value": 14},
+            {"source": 6, "target": 3, "value": 14},
+            {"source": 24, "target": 9, "value": 13},
+            {"source": 33, "target": 29, "value": 13},
+            {"source": 1, "target": 14, "value": 13},
+            {"source": 40, "target": 28, "value": 13},
+            {"source": 10, "target": 11, "value": 13},
+            {"source": 45, "target": 8, "value": 13},
+            {"source": 34, "target": 20, "value": 13},
+            {"source": 18, "target": 27, "value": 13},
+            {"source": 24, "target": 32, "value": 13},
+            {"source": 17, "target": 32, "value": 13},
+            {"source": 4, "target": 17, "value": 43},
+            {"source": 4, "target": 35, "value": 53},
+            {"source": 19, "target": 35, "value": 13},
+            {"source": 19, "target": 46, "value": 13},
+            {"source": 12, "target": 46, "value": 13},
+            {"source": 12, "target": 0, "value": 13},
+            {"source": 0, "target": 42, "value": 13},
+            {"source": 42, "target": 39, "value": 13},
+            {"source": 2, "target": 37, "value": 13},
+            {"source": 37, "target": 22, "value": 13},
+            {"source": 22, "target": 38, "value": 13},
+            {"source": 38, "target": 43, "value": 13},
+            {"source": 41, "target": 3, "value": 13},
+            {"source": 13, "target": 44, "value": 13}
+        ]
+        /*data_placeholder*/
+    };
+
+
+    var projectName = /*project_name_placeholder*/"some project"/*project_name_placeholder*/;
+    var elementId = "files-in-the-same-commit";
+    var description = helpDescription("What does this graph show?",
+            "This graph shows files which were changed in the same commit several times. " +
+            "Thickness of edges is proportional to the number of commits. " +
+            "The idea is to discover de facto dependencies between files. " +
+            "You can click on nodes to see file names in cluster.");
+
+    var width = /*width*/1100/*width*/, height = 700;
+    var uiConfig = { width: width, height: height, color: d3.scale.category20(), margin: {left: 0}};
+
+    var root = d3.select("#" + elementId);
+    newHeader(root, uiConfig, "Files changed in the same commit (" + projectName + ")");
+    var svgRoot = root.append("svg").attr("width", uiConfig.width).attr("height", uiConfig.height);
+    addAreaFrame(svgRoot, uiConfig);
+
+    var graphData = convertIndexToReferencesLinks(filesInTheSameCommitGraph);
+    var graph =
+            withNodeClusterSelection(
+            withNodeClusterSizeFilter(
+            withRemovedNodes( // must be after link filter in case removed link breaks cluster
+            withLinkStrengthFilter(
+            newGraph(graphData)
+    ))));
+    var adjustment = adjustFilteringTillNodeAmountIsLessThan(250, graph);
+
+    var forceField = newGraphForceField(svgRoot, uiConfig);
+    var nodeTooltip = newNodeTooltip(root, svgRoot);
+    var selectedNodesLabel = newSelectedNodesLabel(root, svgRoot);
+    var nodeClickHandler = newGraphForceFieldClickHandler(graph);
+
+    var controlsPanel = newControlsPanel(root, uiConfig);
+    newShowFilePathCheckBox(controlsPanel, [nodeTooltip, selectedNodesLabel]);
+    var gravityDropDown = newGravityDropDown(controlsPanel.addSpace(), forceField, "Gravity: ", ["Low", "Medium", "High"]);
+    newClusterSizeDropDown(controlsPanel.addSpace(), graph, "Min cluster size: ");
+    newLinkStrengthDropDown(controlsPanel.addSpace(), graph, graphData, "Min link strength: ")
+            .update({minLinkStrength: adjustment.minLinkStrength});
+    addHelpButton(controlsPanel.leftFooter(), svgRoot, uiConfig, description,
+            "alt+click or alt+shift+click to remove node or group of nodes", {tooltipPad: 10});
+
+    forceField.onUpdate(gravityDropDown.update);
+    forceField.onNodeHover(nodeTooltip.update);
+    forceField.onNodeClick(nodeClickHandler.update);
+
+    graph.onUpdate([forceField.update, selectedNodesLabel.update, newEmptyGraphLabel(root, svgRoot).update]);
+    graph.sendUpdate();
+
+</script>
+</body>

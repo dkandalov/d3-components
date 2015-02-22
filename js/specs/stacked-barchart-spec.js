@@ -1,3 +1,6 @@
+//noinspection ThisExpressionReferencesGlobalObjectJS
+_.extend(this, barCharts());
+
 describe("'nothing to show' label", function () {
 	var root, svgRoot, uiConfig;
 	beforeEach(function() {

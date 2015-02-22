@@ -1,17 +1,26 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<style></style>
 <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
     <title>Change size by file type</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/stacked-barchart.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/common.css">
+    <script src="js/d3.v3.min.js"></script>
+    <script src="js/underscore-min.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/stacked-barchart.js"></script>
 </head>
-<body class="bar-chart-body">
-<span id="change-size-by-file-type-chart" class="bar-chart"></span>
-<script src="js/d3.v3.min.js"></script>
-<script src="js/underscore-min.js"></script>
-<script src="js/common.js"></script>
-<script src="js/stacked-barchart.js"></script>
+<body>
+<div class="container">
+    <section class="row">
+        <h4>Change size by file type</h4>
+        <!--tag-cut-point-->
+        <div id="change-size-by-file-type-chart" class="bar-chart"></div>
+        <br/><br/>
+        <!--tag-cut-point-->
+    </section>
+</div>
+<!--script-cut-point-->
 <script>
     var rawData = /*data_placeholder*/["\
 date,category,value\n\
@@ -65,11 +74,16 @@ date,category,value\n\
 21/01/2013,txt,00\n\
 22/01/2013,txt,00\n\
 "
-]/*data_placeholder*/;
+    ]/*data_placeholder*/;
+    //noinspection ThisExpressionReferencesGlobalObjectJS
+    _.extend(this, barCharts());
+
     function drawChart() {
+        var root = removeChildrenOf(d3.select("#change-size-by-file-type-chart"));
+
         var margin = {top: 40, right: 50, bottom: 20, left: 50};
         var uiConfig = {
-            width: /*width*/960/*width*/ - margin.left - margin.right,
+            width: styleWidthOf(root) - margin.left - margin.right,
             height: 500 - margin.top - margin.bottom,
             margin: margin
         };
@@ -80,16 +94,11 @@ date,category,value\n\
                 "The idea is to see which languages / parts of project are used and how it evolved over time. " +
                 "For example, how much of \"java\" project is really java and how much is xml/properties.");
 
-        var root = d3.select("#change-size-by-file-type-chart");
-        removeChildrenOf("change-size-by-file-type-chart");
-        var projectName = /*project_name_placeholder*/"some project"/*project_name_placeholder*/;
-        newHeader(root, uiConfig, "Change size by file type chart (" + projectName + ")");
-
         var svgRoot = root.append("svg")
-                    .attr("width", uiConfig.width + uiConfig.margin.left + uiConfig.margin.right)
-                    .attr("height", uiConfig.height + uiConfig.margin.top + uiConfig.margin.bottom + brushHeight + xAxisHeight);
+                .attr("width", uiConfig.width + uiConfig.margin.left + uiConfig.margin.right)
+                .attr("height", uiConfig.height + uiConfig.margin.top + uiConfig.margin.bottom + brushHeight + xAxisHeight);
         var svg = svgRoot.append("g")
-                    .attr("transform", "translate(" + uiConfig.margin.left + "," + uiConfig.margin.top + ")");
+                .attr("transform", "translate(" + uiConfig.margin.left + "," + uiConfig.margin.top + ")");
 
         var data = newMultipleStackedData(rawData);
         var x = newXScale(uiConfig);
@@ -102,20 +111,19 @@ date,category,value\n\
 
         var controlsPanel = newControlsPanel(root, uiConfig);
         percentileDropDown(controlsPanel, data);
-        controlsPanel.addSpace();
-        var groupBy = newGroupByDropDown(controlsPanel, data, "Group by: ", ["day", "week", "month"]);
-        controlsPanel.addSpace();
-        newGroupIndexDropDown(controlsPanel, data, "Change size measured in: ", ["files", "lines", "characters"]);
+        var groupBy = newGroupByDropDown(controlsPanel, data, "Group by:", ["day", "week", "month"]);
+        newGroupIndexDropDown(controlsPanel, data, "Change size measured in:", ["files", "lines", "characters"]);
         addHelpButton(controlsPanel.leftFooter(), svgRoot, uiConfig, description);
 
         bars.onUpdate(legend.update);
         bars.onHover([newBarTooltip(root, svgRoot, uiConfig, {css: "tooltip"}).update, newBarShading().update]);
 
         data.onUpdate([x.update, y.update, bars.update, xAxis.update, yAxis.update, xBrush.update, groupBy.update,
-                       autoGroup(data).update, newEmptyBarChartLabel(root, svgRoot, uiConfig).update]);
+            autoGroup(data).update, newEmptyBarChartLabel(root, svgRoot, uiConfig).update]);
         x.onUpdate([bars.onXScaleUpdate, xAxis.onXScaleUpdate]);
         data.sendUpdate();
     }
     drawChart();
 </script>
+<!--script-cut-point-->
 </body>

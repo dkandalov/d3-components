@@ -1,16 +1,26 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
 <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
     <title>Files changed in the same commit</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/common.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/force-graph.css">
+    <script src="js/d3.v3.min.js"></script>
+    <script src="js/underscore-min.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/force-graph.js"></script>
 </head>
-<body class="force-graph-body">
-<script src="js/d3.v3.min.js"></script>
-<script src="js/underscore-min.js"></script>
-<script src="js/common.js"></script>
-<script src="js/force-graph.js"></script>
-<span id="files-in-the-same-commit" class="force-graph"></span>
+<body>
+<div class="container">
+    <section class="row">
+        <h4>Files changed in the same commit</h4>
+        <!--tag-cut-point-->
+        <div id="files-in-the-same-commit" class="force-graph"></div>
+        <br/><br/>
+        <!--tag-cut-point-->
+    </section>
+</div>
+<!--script-cut-point-->
 <script>
     const filesInTheSameCommitGraph = {
         /*data_placeholder*/
@@ -102,31 +112,31 @@
         /*data_placeholder*/
     };
 
+    //noinspection ThisExpressionReferencesGlobalObjectJS
+    _.extend(this, graphs());
 
-    var projectName = /*project_name_placeholder*/"some project"/*project_name_placeholder*/;
     var elementId = "files-in-the-same-commit";
+    var root = removeChildrenOf(d3.select("#" + elementId));
     var description = helpDescription("What does this graph show?",
             "This graph shows files which were changed in the same commit several times. " +
             "Thickness of edges is proportional to the number of commits. " +
             "The idea is to discover de facto dependencies between files. " +
             "You can click on nodes to see file names in cluster.");
 
-    var width = /*width*/1100/*width*/, height = 700;
+    var width = styleWidthOf(root), height = 700;
     var uiConfig = { width: width, height: height, color: d3.scale.category20(), margin: {left: 0}};
 
-    var root = d3.select("#" + elementId);
-    newHeader(root, uiConfig, "Files changed in the same commit (" + projectName + ")");
     var svgRoot = root.append("svg").attr("width", uiConfig.width).attr("height", uiConfig.height);
     addAreaFrame(svgRoot, uiConfig);
 
     var graphData = convertIndexToReferencesLinks(filesInTheSameCommitGraph);
     var graph =
             withNodeClusterSelection(
-            withNodeClusterSizeFilter(
-            withRemovedNodes( // must be after link filter in case removed link breaks cluster
-            withLinkStrengthFilter(
-            newGraph(graphData)
-    ))));
+                    withNodeClusterSizeFilter(
+                            withRemovedNodes( // must be after link filter in case removed link breaks cluster
+                                    withLinkStrengthFilter(
+                                            newGraph(graphData)
+                                    ))));
     var adjustment = adjustFilteringTillNodeAmountIsLessThan(250, graph);
 
     var forceField = newGraphForceField(svgRoot, uiConfig);
@@ -136,9 +146,9 @@
 
     var controlsPanel = newControlsPanel(root, uiConfig);
     newShowFilePathCheckBox(controlsPanel, [nodeTooltip, selectedNodesLabel]);
-    var gravityDropDown = newGravityDropDown(controlsPanel.addSpace(), forceField, "Gravity: ", ["Low", "Medium", "High"]);
-    newClusterSizeDropDown(controlsPanel.addSpace(), graph, "Min cluster size: ");
-    newLinkStrengthDropDown(controlsPanel.addSpace(), graph, graphData, "Min link strength: ")
+    var gravityDropDown = newGravityDropDown(controlsPanel, forceField, "Gravity:", ["Low", "Medium", "High"]);
+    newClusterSizeDropDown(controlsPanel, graph, "Min cluster size:");
+    newLinkStrengthDropDown(controlsPanel, graph, graphData, "Min link strength:")
             .update({minLinkStrength: adjustment.minLinkStrength});
     addHelpButton(controlsPanel.leftFooter(), svgRoot, uiConfig, description,
             "alt+click or alt+shift+click to remove node or group of nodes", {tooltipPad: 10});
@@ -151,4 +161,5 @@
     graph.sendUpdate();
 
 </script>
+<!--script-cut-point-->
 </body>

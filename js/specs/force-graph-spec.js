@@ -1,3 +1,6 @@
+//noinspection ThisExpressionReferencesGlobalObjectJS
+_.extend(this, graphs());
+
 describe("quick find", function() {
     it("can determine if points are connected", function() {
         var quickFind = newQuickFindIndex(3);

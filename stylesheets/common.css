@@ -1,3 +1,20 @@
+h4 {
+    text-align: center;
+}
+
+.line {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+img.helpButton {
+    width: 15px;
+    opacity: 0.4;
+    vertical-align: middle;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
 div.helpTooltip {
     position: absolute;
     background-color: rgba(245,245,245,1.0);
@@ -30,4 +47,9 @@ div.helpTooltip {
     white-space: -pre-wrap;      /*Opera <7*/
     white-space: -o-pre-wrap;    /*Opera 7*/
     word-wrap: break-word;       /*IE*/
+}
+
+.controlPanel span {
+    margin-left: 5px;
+    margin-right: 5px;
 }

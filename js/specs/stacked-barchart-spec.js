@@ -36,11 +36,9 @@ describe("tooltip", function () {
 		root.remove();
 	});
 
-	it("becomes visible on non-null update", function() {
-        var getTooltipText = function(it) {
-            return "some text: " + it.value;
-        };
-		var tooltip = newBarTooltip(root, svgRoot, uiConfig, {delay: 0, delayBeforeHide: 0}, getTooltipText);
+	it("becomes visible on non-null update", function(done) {
+        var getTooltipText = function(it) { return "some text: " + it.value; };
+        var tooltip = newBarTooltip(root, svgRoot, uiConfig, {delay: 0, delayBeforeHide: 0}, getTooltipText);
 		expect(root.select("div")[0][0].getAttribute("style")).toContain("opacity: 0");
 
 		var bar = document.createElement('rect');
@@ -52,8 +50,9 @@ describe("tooltip", function () {
 		});
 
 		setTimeout(function() {
-			expect(root.select("div")[0][0].getAttribute("style")).toContain("opacity: 0.9");
-		}, 10);
+			expect(getComputedStyle(root.select("div")[0][0]).opacity).toBeGreaterThan(0);
+            done();
+		}, 20);
 	});
 });
 

@@ -9,12 +9,11 @@ See [JUnit code history visualization](http://dkandalov.github.io/code-history-m
 
 Why?
 ====
-d3.js is good but after writing a lot of code it might feel like the cat in the picture.
-There are few libraries (like [dc.js](https://github.com/dc-js/dc.js)) which are not too low-level
+d3.js is good but after writing a lot of code it might feel like the rubik's cube in the picture below.
+There are libraries (e.g. [dc.js](https://github.com/dc-js/dc.js)) which are not too low-level
 but they seem to be designed for few charts with many configuration options.
-What would be great is to have small composable components with minimal dependencies on each other.
+What would be great is to have **small composable components** with minimal dependencies on each other.
 This is an attempt to do it.
-(To be fair there are libraries that might already do it, e.g. [DVL](https://github.com/vogievetsky/DVL) seems to be based on a similar idea.)
 
 <img src="https://raw.githubusercontent.com/dkandalov/d3-components/master/omg.jpg" alt="OMG" title="OMG" align="center"/>
 

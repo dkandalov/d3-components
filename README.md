@@ -18,10 +18,8 @@ This is an attempt to do it.
 <img src="https://raw.githubusercontent.com/dkandalov/d3-components/master/omg.jpg" alt="OMG" title="OMG" align="center"/>
 
 
-How to use?
-===========
-Currently there is no proper API documentation and the only way is to look at examples.
-
+How to try it?
+==============
 Using jsfiddle:
  - [bar chart](http://jsfiddle.net/r4wk0c5t/)
  - [graph](http://jsfiddle.net/2ywqjzkg/1/)
@@ -30,6 +28,16 @@ Or locally:
  - clone the project
  - open locally ```examples/bar-chart-example.html``` or ```examples/graph-example.html```
  - use ```specs/SpecRunner.html``` to execute jasmine specs
+
+
+API
+===
+Currently there no proper API documentation so looks at examples might be the best way to understand how components work.
+
+There are two types of components: data source and UI components.
+Data source components produce or transform data. They are supposed to be wrapped around each other
+so that from outside it looks like one component.
+UI components listen to updates from data component and modify web page.
 
 
 Installation

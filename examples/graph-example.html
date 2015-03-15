@@ -14,16 +14,12 @@
 <div class="container">
     <section class="row">
         <h4 style="text-align: center">Files changed in the same commit</h4>
-        <!--tag-cut-point-->
         <div id="files-in-the-same-commit" class="force-graph"></div>
         <br/><br/>
-        <!--tag-cut-point-->
     </section>
 </div>
-<!--script-cut-point-->
 <script>
-    const filesInTheSameCommitGraph = {
-        /*data_placeholder*/
+    var filesInTheSameCommitGraph = {
         "nodes": [
             {"name": "/src/MyArtifactRepository.java", "group": 1},
             {"name": "/src/AbstractGradleUserProjectChange.java", "group": 1},
@@ -109,7 +105,6 @@
             {"source": 41, "target": 3, "value": 13},
             {"source": 13, "target": 44, "value": 13}
         ]
-        /*data_placeholder*/
     };
 
     //noinspection ThisExpressionReferencesGlobalObjectJS
@@ -161,5 +156,4 @@
     graph.sendUpdate();
 
 </script>
-<!--script-cut-point-->
 </body>

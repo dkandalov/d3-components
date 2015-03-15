@@ -2,7 +2,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
     <title>Files changed in the same commit</title>
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/common.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/force-graph.css">
     <script src="js/d3.v3.min.js"></script>
@@ -13,7 +13,7 @@
 <body>
 <div class="container">
     <section class="row">
-        <h4>Files changed in the same commit</h4>
+        <h4 style="text-align: center">Files changed in the same commit</h4>
         <!--tag-cut-point-->
         <div id="files-in-the-same-commit" class="force-graph"></div>
         <br/><br/>
@@ -113,7 +113,7 @@
     };
 
     //noinspection ThisExpressionReferencesGlobalObjectJS
-    _.extend(this, graphs());
+    _.extend(this, d3c.graphs());
 
     var elementId = "files-in-the-same-commit";
     var root = removeChildrenOf(d3.select("#" + elementId));
@@ -131,12 +131,12 @@
 
     var graphData = convertIndexToReferencesLinks(filesInTheSameCommitGraph);
     var graph =
-            withNodeClusterSelection(
-                    withNodeClusterSizeFilter(
-                            withRemovedNodes( // must be after link filter in case removed link breaks cluster
-                                    withLinkStrengthFilter(
-                                            newGraph(graphData)
-                                    ))));
+        withNodeClusterSelection(
+        withNodeClusterSizeFilter(
+        withRemovedNodes( // must be after link filter in case removed link breaks cluster
+        withLinkStrengthFilter(
+        newGraph(graphData)
+    ))));
     var adjustment = adjustFilteringTillNodeAmountIsLessThan(250, graph);
 
     var forceField = newGraphForceField(svgRoot, uiConfig);

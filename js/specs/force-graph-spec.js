@@ -1,5 +1,5 @@
 //noinspection ThisExpressionReferencesGlobalObjectJS
-_.extend(this, graphs());
+_.extend(this, d3c.graphs());
 
 describe("quick find", function() {
     it("can determine if points are connected", function() {

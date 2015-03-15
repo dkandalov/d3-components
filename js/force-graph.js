@@ -1,7 +1,9 @@
+(function() {
+this.d3c = _.extend(this.d3c || {}, {graphs: graphs});
 function graphs() {
     return {
         __init__: function() {
-            _.extend(this, common());
+            _.extend(this, d3c.common());
             return this;
         },
 
@@ -624,3 +626,4 @@ function graphs() {
 
     }.__init__();
 }
+}());

@@ -1,31 +1,10 @@
+(function() {
+this.d3c = _.extend(this.d3c || {}, {barCharts: barCharts});
 function barCharts() {
 	return {
 		__init__: function() {
-			_.extend(this, common());
+			_.extend(this, d3c.common());
 			return this;
-		},
-
-		newEmptyBarChartLabel: function(root, svgRoot, uiConfig) {
-			var label = root.append("div")
-				.html("Unfortunately, there is nothing to show.")
-				.style("position", "absolute")
-				.style("opacity", 0)
-				.attr("class", "tooltip");
-			var it = {};
-			it.update = function(update) {
-				if (update.maxY > 0) {
-					label.style("opacity", 0);
-				} else {
-					label.style("opacity", 0.9)
-						.style("top", function(){
-							return offsetTop(svgRoot) + uiConfig.margin.top + (uiConfig.height / 2) - (this.offsetHeight / 2) + "px";
-						})
-						.style("left", function(){
-							return offsetLeft(svgRoot) + uiConfig.margin.left + (uiConfig.width / 2) - (this.offsetWidth / 2) + "px";
-						});
-				}
-			};
-			return it;
 		},
 
 		newBarShading: function() {
@@ -40,9 +19,8 @@ function barCharts() {
 			return it;
 		},
 
-		newBarTooltip: function(root, svgRoot, uiConfig, settings) {
+		newBarTooltip: function(root, svgRoot, uiConfig, settings, getTooltipText) {
 			if (settings === undefined) settings = {};
-			if (settings.showCategory === undefined) settings.showCategory = true;
 			if (settings.css === undefined) settings.css = "";
 			if (settings.delay === undefined) settings.delay = 1500;
 			if (settings.delayBeforeHide === undefined) settings.delayBeforeHide = 100;
@@ -52,11 +30,6 @@ function barCharts() {
 				.style("position", "absolute")
 				.style("opacity", 0);
 
-			var dateFormat = d3.time.format("%d/%m/%Y");
-			var valueFormat = function(n) {
-				var s = d3.format(",")(n);
-				return s.length < 6 ? s : d3.format("s")(n);
-			};
 			var lastUpdate = null;
 
 			var it = {};
@@ -81,9 +54,7 @@ function barCharts() {
 					}
 					var top = offsetTop(svgRoot) + uiConfig.margin.top + y + (height / 2);
 
-					var text = ["Value: " + valueFormat(update.value), "Date: " + dateFormat(update.date)];
-					if (settings.showCategory) text.push("Category: " + update.category);
-					div.html(text.join("</br>"))
+					div.html(getTooltipText(update))
 						.style("left", left + "px")
 						.style("top", top + "px");
 
@@ -97,114 +68,22 @@ function barCharts() {
 			};
 			return it;
 		},
+        tooltipWithDateKey: function(update) {
+            var dateFormat = d3.time.format("%d/%m/%Y");
+            var valueFormat = function(n) {
+                var s = d3.format(",")(n);
+                return s.length < 6 ? s : d3.format("s")(n);
+            };
+            return ["Value: " + valueFormat(update.value), "Date: " + dateFormat(update.key)].join("<br/>");
+        },
+        tooltipWithDateKeyAndCategory: function(update) {
+            return tooltipWithDateKey(update) + "<br/>Category: " + update.category;
+        },
 
-		// based on https://gist.github.com/ZJONSSON/3918369
-		newLegend: function(root, position) {
-			var it = {};
-			it.update = function(items) {
-				// always redraw legend so that it would be above graph
-				root.select(".legend").remove();
-				var legend = root.append("g").attr("class", "legend")
-					.attr("transform", "translate(" + position.x + "," + position.y + ")");
-
-				var box = legend.append("rect").attr("class", "box");
-				var itemList = legend.append("g").attr("class", "items");
-
-				itemList.selectAll("text")
-					.data(items)
-					.call(function(d) { d.enter().append("text") })
-					.attr("y", function(d, i) { return i * 1.04 + "em"; })
-					.attr("x", "1em")
-					.text(function(d) { return d.category; });
-
-				itemList.selectAll("circle")
-					.data(items)
-					.call(function(d) { d.enter().append("circle") })
-					.attr("cy", function(d, i) { return i - 0.4 + "em"; })
-					.attr("cx", 0)
-					.attr("r", "0.4em")
-					.style("fill",function(d) { return d.color; });
-
-				var legendPadding = 5;
-				var itemListBox = itemList[0][0].getBBox();
-				box.attr("x", itemListBox.x - legendPadding)
-					.attr("y", itemListBox.y - legendPadding)
-					.attr("height", itemListBox.height + 2 * legendPadding)
-					.attr("width", itemListBox.width + 2 * legendPadding);
-			};
-			return it;
-		},
-
-
-		newGroupByDropDown: function(root, stackedData, label, groupByNames) {
-			return newDropDown(root, label, groupByNames,
-				function(update) {
-					return update.groupByIndex;
-				},
-				function(newValue) {
-					stackedData.groupBy(parseInt(newValue));
-				}
-			);
-		},
-
-		newGroupIndexDropDown: function(root, stackedData, label, groupNames) {
-			return newDropDown(root, label, groupNames,
-				function(update) {
-					return update.groupIndex;
-				},
-				function(newValue) {
-					stackedData.setGroupIndex(newValue);
-				}
-			);
-		},
-
-
-		newXBrush: function(root, uiConfig, xScale, height, yPosition, color) {
-			height = height === undefined ? 50 : height;
-			yPosition = yPosition === undefined ? (uiConfig.height + uiConfig.margin.top) : yPosition;
-
-			var brushUiConfig = extendCopyOf(uiConfig, {height: height});
-			var brushXScale = newXScale(uiConfig);
-			var brushYScale = newYScale(brushUiConfig);
-			var brush = d3.svg.brush().x(brushXScale);
-
-			var g = root.append("g").attr("transform", "translate(0" + "," + yPosition + ")");
-
-			brush.update = function(update) {
-				brushXScale.update(update);
-				brushYScale.update(update);
-				updateXScale();
-				updateUI(update);
-			};
-			brush.on("brush", function() {
-				updateXScale();
-			});
-			return brush;
-
-
-			function updateUI(update) {
-				g.selectAll("g").remove();
-				g.selectAll("defs").remove();
-
-				var bars = newBars(g, brushUiConfig, brushXScale, brushYScale, "brushBars", color);
-				if (update !== null) bars.update(update);
-
-				g.append("g")
-					.attr("class", "x brush")
-					.call(brush)
-					.selectAll("rect")
-					.attr("height", height);
-			}
-
-			function updateXScale() {
-				var extent = brush.empty() ? brushXScale.domain() : brush.extent();
-				xScale.setDomain(extent);
-			}
-		},
-
-		newBars: function(root, uiConfig, xScale, yScale, idPostfix, color) {
+        newBars: function(root, uiConfig, xScale, yScale, idPostfix) {
 			idPostfix = (idPostfix === undefined ? "-bars" : "-" + idPostfix);
-			color = (color === undefined ? d3.scale.category20() : color);
+			var color = uiConfig.color || d3.scale.category20();
+            var barWidth = uiConfig.barWidth || "10px";
 			var dataStacked;
 
 			root.append("defs").append("clipPath").attr("id", "clip" + idPostfix)
@@ -214,6 +93,9 @@ function barCharts() {
 			var notifyCategoryListeners = observable(it);
 			var notifyHoverListeners = observable(it, "onHover");
 			it.update = function(update) {
+                if (update.dataStacked === undefined) {
+                    throw new Error("newBars() requires stackedData property. See withStackedData() function.")
+                }
 				dataStacked = update.dataStacked;
 
 				root.selectAll(".layer" + idPostfix).remove();
@@ -224,17 +106,17 @@ function barCharts() {
 					.attr("class", "layer" + idPostfix)
 					.style("fill", function(d, i) { return color(i); });
 
-				var rect = layer.selectAll("rect")
+                var rect = layer.selectAll("rect")
 					.data(function(d) { return d; })
 					.enter().append("rect")
 					.attr("clip-path", "url(#clip" + idPostfix + ")")
 					.attr("x", function(d) { return xScale(d.x); })
 					.attr("y", function(d) { return yScale(d.y0 + d.y); })
-					.attr("width", barWidth())
+					.attr("width", xScale.valueSize || barWidth)
 					.attr("height", function(d) { return yScale(d.y0) - yScale(d.y0 + d.y); });
 
 				rect.on("mouseover", function(d) {
-					notifyHoverListeners({event: "mouseover", bar: this, value: d.y, date: d.x, category: getCategory(d)});
+					notifyHoverListeners({event: "mouseover", bar: this, value: d.y, key: d.x, category: getCategory(d)});
 				}).on("mouseout", function() {
 					notifyHoverListeners({event: "mouseout", bar: this});
 				});
@@ -252,357 +134,186 @@ function barCharts() {
 				layer.selectAll("rect")
 					.data(function(d) { return d; })
 					.attr("x", function(d) { return xScale(d.x); })
-					.attr("width", barWidth());
+					.attr("width", xScale.valueSize || "20px");
 			};
 			return it;
 
 			function getCategory(d) {
 				return d["category"];
 			}
-			function nonZero(length) {
-				return (length > 0 ? length : 0.0000001);
-			}
-			function barWidth() {
-				var barWidth = uiConfig.width / nonZero(xScale.amountOfValues) - 1;
-				barWidth = Math.floor(barWidth);
-				if (barWidth > 20) barWidth = barWidth - 1;
-				if (barWidth < 1) barWidth = 1;
-				return barWidth;
-			}
 		},
 
+        newXBrush: function(root, uiConfig, xScale, height, yPosition) {
+            height = height === undefined ? 50 : height;
+            yPosition = yPosition === undefined ? (uiConfig.height + uiConfig.margin.top) : yPosition;
 
-		newYAxis: function(root, label, y) {
-			var valueFormat = function(n) {
-				var s = d3.format(",")(n);
-				return s.length < 6 ? s : d3.format("s")(n);
-			};
-			var axis = d3.svg.axis().scale(y).orient("left").tickFormat(valueFormat);
-			axis.update = function() {
-				root.selectAll(".y.axis").remove();
-				root.append("g")
-					.attr("class", "y axis")
-					.call(axis)
-					.append("text")
-					.attr("transform", "rotate(-90)")
-					.attr("y", 6)
-					.attr("dy", ".71em")
-					.style("text-anchor", "end")
-					.text(label);
-			};
-			return axis;
-		},
+            var brushUiConfig = extendCopyOf(uiConfig, {height: height});
+            var brushXScale = withGroupValueSize(uiConfig, newTimeScale("date").nice().rangeRound([0, uiConfig.width]));
+            var brushYScale = newScale("_row_total_").range([brushUiConfig.height, 0]);
+            var brush = d3.svg.brush().x(brushXScale);
 
-		newXAxis: function(root, uiConfig, xScale) {
-			var axis = d3.svg.axis().scale(xScale).orient("bottom");
-			axis.update = function() {
-				root.selectAll(".x.axis").remove();
-				root.append("g")
-					.attr("class", "x axis")
-					.attr("transform", "translate(0," + uiConfig.height + ")")
-					.call(axis);
-			};
-			axis.onXScaleUpdate = function() {
-				root.select(".x.axis").call(axis);
-			};
-			return axis;
-		},
+            var g = root.append("g").attr("transform", "translate(0" + "," + yPosition + ")");
+
+            brush.update = function(update) {
+                brushXScale.update(update);
+                brushYScale.update(update);
+                updateXScale();
+                updateUI(update);
+            };
+            brush.on("brush", function() {
+                updateXScale();
+            });
+            return brush;
 
 
-		newXScale: function(uiConfig) {
-			var timeInterval = d3.time.day;
-			var x = d3.time.scale().nice().rangeRound([0, uiConfig.width]);
-			x.update = function(update) {
-				timeInterval = update.dataTimeInterval;
-				x.domain([update.minX, timeInterval.offset(update.maxX, 1)]);
-				x.amountOfValues = amountOfValuesIn(x.domain(), timeInterval);
-			};
-			var notifyListeners = observable(x);
-			x.setDomain = function(extent) {
-				x.amountOfValues = amountOfValuesIn(extent, timeInterval);
-				x.domain(extent);
-				notifyListeners(x);
-			};
-			return x;
+            function updateUI(update) {
+                g.selectAll("g").remove();
+                g.selectAll("defs").remove();
 
-			function amountOfValuesIn(domain, timeInterval) {
-				var count = 0;
-				var from = domain[0];
-				var to = domain[1];
-				while (from < to) {
-					count++;
-					from = timeInterval.offset(from, 1)
-				}
+                var bars = newBars(g, brushUiConfig, brushXScale, brushYScale, "brushBars");
+                if (update !== null) bars.update(update);
 
-				var millisInOneInterval = timeInterval.offset(from, 1) - from;
-				var remainder = (to - from) / millisInOneInterval;
+                g.append("g")
+                    .attr("class", "x brush")
+                    .call(brush)
+                    .selectAll("rect")
+                    .attr("height", height);
+            }
 
-				return count + remainder;
-			}
-		},
-
-		newYScale: function(uiConfig) {
-			var y = d3.scale.linear().range([uiConfig.height, 0]);
-			y.update = function(update) {
-				y.domain([update.minY, update.maxY]);
-			};
-			return y;
-		},
-
-		autoGroup: function(data) {
-			var ranOnce = false;
-			var it = {};
-			it.update = function(update) {
-				if (ranOnce) return;
-				ranOnce = true;
-
-				var timeInterval = bestTimeIntervalForGrouping(update.minX, update.maxX);
-				data.groupBy(timeInterval);
-			};
-			return it;
-
-			function bestTimeIntervalForGrouping(minTime, maxTime) {
-				if (new Date(maxTime - minTime) < d3.time.month.offset(new Date(0), 1)) {
-					return d3.time.day;
-				} else if (new Date(maxTime - minTime) < d3.time.month.offset(new Date(0), 24)) {
-					return d3.time.monday;
-				} else {
-					return d3.time.month;
-				}
-			}
-		},
+            function updateXScale() {
+                var extent = brush.empty() ? brushXScale.domain() : brush.extent();
+                xScale.setDomain(extent);
+            }
+        },
 
 
-		stackedData: function(rawCsv) {
-			var groupedData = groupByCategory(d3.csv.parse(rawCsv.trim()));
-			var dataStacked = groupedData.length === 0 ? [] : d3.layout.stack()(groupedData);
-
-			var it = {};
+		withStackedData: function(dataSource) {
+			var it = _.clone(dataSource);
 			var notifyListeners = observable(it);
+            dataSource.onUpdate(function(update) {
+                var groupedData = groupByCategory(update.data, update.key, update.categories);
+                var dataStacked = groupedData.length === 0 ? [] : d3.layout.stack()(groupedData);
+                notifyListeners(extendCopyOf(update, {
+                    dataStacked: dataStacked
+                }));
+            });
 			it.sendUpdate = function() {
-				notifyListeners({
-					dataStacked: dataStacked
-				});
-			};
+                dataSource.sendUpdate();
+            };
 			return it;
 
-			function getCategory(d) {
-				return d["category"];
-			}
-			function groupByCategory(data) {
-				var dateFormat = d3.time.format("%d/%m/%Y");
-				return d3.nest().key(function(d){ return getCategory(d); }).entries(data)
-					.map(function (entry) {
-						return entry.values.map(function (d) {
-							return {
-								x: dateFormat.parse(d.date),
-								y: parseFloat(d["value"]),
-								category: getCategory(d)
-							};
-						});
-					});
-			}
-		},
-
-		withMinMax: function(data) {
-			var dataUpdate;
-			var it = _.clone(data);
-			var notifyListeners = observable(it);
-			data.onUpdate(function(update) {
-				dataUpdate = update;
-			});
-			it.sendUpdate = function() {
-				data.sendUpdate();
-				var minX = d3.min(dataUpdate.dataStacked, function(d) {
-					return d3.min(d, function(dd) {
-						return dd.x;
-					});
-				});
-				var maxX = d3.max(dataUpdate.dataStacked, function(d) {
-					return d3.max(d, function(dd) {
-						return dd.x;
-					});
-				});
-				var minY = 0;
-				var maxY = d3.max(dataUpdate.dataStacked, function(layer) {
-					return d3.max(layer, function(d) {
-						return d.y0 + d.y;
-					});
-				});
-				notifyListeners(extendCopyOf(dataUpdate, {
-					minX: minX,
-					maxX: maxX,
-					minY: minY,
-					maxY: maxY
-				}));
-			};
-			return it;
-		},
-
-		groupedByTime: function(data) {
-			var timeIntervals = [d3.time.day, d3.time.monday, d3.time.month];
-			var groupByIndex = 0;
-			var groupedData;
-			var dataUpdate;
-
-			var it = _.clone(data);
-			var notifyListeners = observable(it);
-			data.onUpdate(function(update) {
-				dataUpdate = update;
-			});
-			it.sendUpdate = function() {
-				data.sendUpdate();
-				regroupStackedData();
-				notifyListeners(extendCopyOf(dataUpdate, {
-					dataStacked: groupedData,
-					groupByIndex: groupByIndex,
-					dataTimeInterval: timeIntervals[groupByIndex]
-				}));
-			};
-			it.groupBy = function(value) {
-				if (!_.isNumber(value)) {
-					var i = timeIntervals.indexOf(value);
-					if (i === -1) return;
-					value = i;
-				}
-				if (value === groupByIndex) return;
-
-				groupByIndex = value;
-				it.sendUpdate();
-			};
-			return it;
-
-			function getCategory(d) {
-				return d["category"];
-			}
-			function groupBy(timeInterval, daysData) {
-				if (timeInterval === d3.time.day) return daysData;
-				return d3.values(d3.nest()
-					.key(function(d) { return timeInterval.floor(d.x); })
-					.rollup(function(days) {
-						var sumOfY = d3.sum(days, function (d) { return d.y; });
-						var sumOfY0 = d3.sum(days, function (d) { return d.y0; });
-						var date = timeInterval.floor(days[0].x);
-						return { category: getCategory(days[0]), x: date, y: sumOfY, y0: sumOfY0 };
-					})
-					.map(daysData));
-			}
-			function regroupStackedData() {
-				groupedData = dataUpdate.dataStacked.map(function(it) {
-					return groupBy(timeIntervals[groupByIndex], it);
-				});
+			function groupByCategory(data, key, categories) {
+                return categories.map(function(category) {
+                    return data.map(function(row) {
+                        return {
+                            x: row[key],
+                            y: row[category],
+                            category: category
+                        };
+                    })
+                });
 			}
 		},
 
-		filteredByPercentile: function(data) {
-			var percentile = 1.0;
-			var dataUpdate;
-			var it = _.clone(data);
-			var notifyListeners = observable(it);
-			data.onUpdate(function(update) {
-				dataUpdate = update;
-			});
-			it.sendUpdate = function() {
-				data.sendUpdate();
-				notifyListeners(extendCopyOf(dataUpdate, {
-					percentile: percentile,
-					dataStacked: filter(dataUpdate.dataStacked, percentile)
-				}));
-			};
-			it.setPercentile = function(value) {
-				percentile = value;
-				it.sendUpdate();
-			};
-			return it;
+		newStackedDataSource: function(rawCsv) {
+            var dataSource;
+            if (_.isArray(rawCsv)) {
+                dataSource = dataSourceSwitcher(rawCsv.map(function(it) {
+                    return newDataSource(parseDateBasedCsv(it), "date");
+                }));
+            } else {
+                dataSource = newDataSource(parseDateBasedCsv(rawCsv), "date");
+            }
 
-			function filter(dataStacked, percentile) {
-				if (percentile === 1.0) return dataStacked;
-				var amountOfCategories = dataStacked.length;
-				var amountOfDataPoints = d3.max(dataStacked, function(it) { return it.length; });
+            var rowTotal = "_row_total_";
+            var stackedDataSource = withStackedData(
+                autoGroupOnFirstUpdate(
+                clampedMin(0, withMinMax(rowTotal,
+                withMinMaxKey(
+                filteredByPercentile(rowTotal,
+                withRowTotal(rowTotal,
+                groupedBy(d3time([d3.time.day, d3.time.monday, d3.time.month]),
+                dataSource
+            ))))))));
+            stackedDataSource.rowTotal = rowTotal;
+            return stackedDataSource;
+		},
+        newStackedDataArrayPreGrouped: function(rawCsv, groupFunctions) {
+            var dataSource = dataSourceSwitcher(rawCsv.map(function(it) {
+                return newDataSource(parseDateBasedCsv(it), "date");
+            }));
 
-				var dataWithTotal = [];
-				for (var i = 0; i < amountOfDataPoints; i++) {
-					var total = 0;
-					for (var categoryIndex = 0; categoryIndex < amountOfCategories; categoryIndex++) {
-						total += dataStacked[categoryIndex][i].y;
-					}
-					dataWithTotal.push({ index: i, total: total });
-				}
-				var sortedData = dataWithTotal.sort(function (a, b){ return a.total - b.total; });
-				var n = sortedData[Math.round((sortedData.length - 1) * percentile)];
-
-				var indicesToExclude = _.unique(sortedData
-					.filter(function(it) { return it.total > n.total; })
-					.map(function(it) { return it.index; }));
-
-				return dataStacked.map(function(array) {
-					var result = [];
-					for (var i = 0; i < array.length; i++) {
-						if (!_.contains(indicesToExclude, i)) result.push(array[i]);
-					}
-					return result;
-				});
-			}
+            var rowTotal = "_row_total_";
+            var stackedDataSource = withStackedData(
+                autoGroupOnFirstUpdate(
+                clampedMin(0, withMinMax(rowTotal,
+                withMinMaxKey(
+                filteredByPercentile(rowTotal,
+                withRowTotal(rowTotal,
+                withDataSourceIndexAsGroup(groupFunctions,
+                dataSource
+            ))))))));
+            stackedDataSource.rowTotal = rowTotal;
+            return stackedDataSource;
 		},
 
-		newStackedData: function(rawCsv) {
-			return withMinMax(filteredByPercentile(groupedByTime(stackedData(rawCsv))));
-		},
-
-		newMultipleStackedData: function(rawCsvArray) {
-			var groupIndex = 0;
-			var stackedData = rawCsvArray.map(function(it) { return newStackedData(it); });
-
-			var it = {};
-			var notifyListeners = observable(it);
-			it.sendUpdate = function() {
-				stackedData[groupIndex].sendUpdate();
-			};
-			it.setGroupIndex = function(value) {
-				groupIndex = value;
-				it.sendUpdate();
-			};
-			delegateByIndexTo(stackedData, "groupBy", it, function() { return groupIndex; });
-			delegateByIndexTo(stackedData, "setPercentile", it, function() { return groupIndex; });
-			stackedData.forEach(function(it) {
-				it.onUpdate(function(update) {
-					update.groupIndex = groupIndex;
-					notifyListeners(update);
-				});
-			});
-			return it;
-		},
-
-		newMultipleStackedDataWithTimeIntervals: function(rawCsvArray, timeIntervals) {
-			var groupIndex = 0;
-			var stackedData = rawCsvArray.map(function(it) { return newStackedData(it); });
-
-			var it = {};
-			var notifyListeners = observable(it);
-			it.sendUpdate = function() {
-				stackedData[groupIndex].sendUpdate();
-			};
-			it.setGroupIndex = function(value) {
-				groupIndex = value;
-				it.sendUpdate();
-			};
-			it.groupBy = function(value) {
-				var i = timeIntervals.indexOf(value);
-				if (i !== -1) it.setGroupIndex(i);
-			};
-			delegateByIndexTo(stackedData, "setPercentile", it, function() { return groupIndex; });
-			stackedData.forEach(function(it) {
-				it.onUpdate(function(update) {
-					update.groupIndex = groupIndex;
-					update.dataTimeInterval = timeIntervals[groupIndex];
-					notifyListeners(update);
-				});
-			});
-			return it;
-		},
+        autoGroupOnFirstUpdate: function(dataSource) {
+            var ranOnce = false;
+            var it = _.clone(dataSource);
+            var notifyListeners = observable(it);
+            dataSource.onUpdate(function(update) {
+                if (ranOnce) {
+                    notifyListeners(update);
+                    return;
+                }
+                ranOnce = true;
+                var groupFunction = _.find(update.groupFunctions, function(groupFunction) {
+                    var threshold = 100;
+                    var count = 0;
+                    var value = update.min[update.key];
+                    while (value < update.max[update.key] && count < threshold) {
+                        value = groupFunction.nextFloor(value);
+                        count++;
+                    }
+                    return count < threshold;
+                });
+                if (groupFunction === undefined) {
+                    groupFunction = _.last(update.groupFunctions);
+                }
+                dataSource.groupBy(groupFunction);
+            });
+            it.sendUpdate = function() {
+                dataSource.sendUpdate();
+            };
+            return it;
+        },
 
 
-		newShowMovingAverageCheckBox: function(root, movingAverageLine) {
+        percentileDropDown: function(root, data) {
+            var optionLabels = [];
+            for (var i = 100; i >= 95; i -= 0.5) {
+                optionLabels.push(i);
+            }
+            newDropDown(root, "Percentile:", optionLabels,
+                function() { return 0; },
+                function(newValue) {
+                    data.setPercentile(+optionLabels[newValue] / 100);
+                }
+            );
+        },
+
+        newGroupIndexDropDown: function(root, stackedData, label, groupNames) {
+            return newDropDown(root, label, groupNames,
+                function(update) {
+                    return update.groupByIndex;
+                },
+                function(newValue) {
+                    stackedData.setDataSourceIndex(newValue);
+                }
+            );
+        },
+
+        newShowMovingAverageCheckBox: function(root, movingAverageLine) {
             return newCheckBox(root, "Moving average:", function(isChecked) {
                 movingAverageLine.setVisible(isChecked);
             });
@@ -632,9 +343,11 @@ function barCharts() {
 
 			var it = {};
 			it.update = function(update) {
-				var getValue = function(it) { return it.y; };
-				var getDate = function(it) { return it.x; };
-				movingAverageData = movingAverageForTimedValues(update.dataStacked[0], update.dataTimeInterval, getDate, getValue);
+				var getValue = function(it) { return it[update.totalKey]; };
+				var getDate = function(it) { return it.date; };
+                movingAverageData = movingAverageForTimedValues(
+                    update.data, update.groupFloor, update.groupNextFloor, getDate, getValue
+                );
 				redrawLine();
 			};
 			it.onXScaleUpdate = function() {
@@ -647,18 +360,30 @@ function barCharts() {
 			return it;
 		},
 
-		movingAverageForTimedValues: function(data, timeInterval, getDate, getValue, period) {
-			if (data === undefined || data.length < 2) return [];
+		movingAverageForTimedValues: function(data, groupFloor, groupNextFloor, getDate, getValue, period) {
+            function valuesRange(from, to) {
+                var threshold = 0;
+                var result = [];
+                from = groupFloor(from);
+                while (from < to && threshold++ < 1000000) {
+                    result.push(from);
+                    from = groupNextFloor(from);
+                }
+                result.push(from);
+                return result;
+            }
+
+            if (data === undefined || data.length < 2) return [];
 
 			period = (period === undefined ? Math.round(data.length / 10) : period);
 			if (period < 2) return [];
 
 			var firstDate = getDate(data[0]);
-			var lastDatePlusOne = timeInterval.offset(getDate(data[data.length - 1]), 1);
-			var allDates = timeInterval.range(firstDate, lastDatePlusOne);
+			var lastDate = getDate(data[data.length - 1]);
+			var allDates = valuesRange(firstDate, lastDate);
 			if (allDates.length < period) return [];
 
-			data = valuesForEachDate(data, allDates, getDate, getValue);
+            data = valuesForEachDate(data, allDates, getDate, getValue);
 
 			var mean = d3.mean(allDates.slice(0, period), function(date){ return data[date]; });
 			var result = [{date: allDates[period - 1], mean: mean}];
@@ -674,17 +399,83 @@ function barCharts() {
 		},
 
 
-		newTotalAmountLabel: function(root, label) {
+        // based on https://gist.github.com/ZJONSSON/3918369
+        newLegend: function(root, position) {
+            var it = {};
+            it.update = function(items) {
+                // always redraw legend so that it is above graph
+                root.select(".legend").remove();
+                var legend = root.append("g").attr("class", "legend")
+                    .attr("transform", "translate(" + position.x + "," + position.y + ")");
+
+                if (items.length === 0) {
+                    legend.style("opacity", 0);
+                } else {
+                    legend.style("opacity", 0.9)
+                }
+
+                var box = legend.append("rect").attr("class", "box");
+                var itemList = legend.append("g").attr("class", "items");
+
+                itemList.selectAll("text")
+                    .data(items)
+                    .call(function(d) { d.enter().append("text") })
+                    .attr("y", function(d, i) { return i * 1.04 + "em"; })
+                    .attr("x", "1em")
+                    .text(function(d) { return d.category; });
+
+                itemList.selectAll("circle")
+                    .data(items)
+                    .call(function(d) { d.enter().append("circle") })
+                    .attr("cy", function(d, i) { return i - 0.4 + "em"; })
+                    .attr("cx", 0)
+                    .attr("r", "0.4em")
+                    .style("fill",function(d) { return d.color; });
+
+                var legendPadding = 5;
+                var itemListBox = itemList[0][0].getBBox();
+                box.attr("x", itemListBox.x - legendPadding)
+                    .attr("y", itemListBox.y - legendPadding)
+                    .attr("height", itemListBox.height + 2 * legendPadding)
+                    .attr("width", itemListBox.width + 2 * legendPadding);
+            };
+            return it;
+        },
+
+        newEmptyChartLabel: function(root, svgRoot, uiConfig) {
+            var label = root.append("div")
+                .html("Unfortunately, there is nothing to show.")
+                .style("position", "absolute")
+                .style("opacity", 0)
+                .attr("class", "tooltip");
+            var it = {};
+            it.update = function(update) {
+                if (update.data.length > 0) {
+                    label.style("opacity", 0);
+                } else {
+                    label.style("opacity", 0.9)
+                        .style("top", function(){
+                            return offsetTop(svgRoot) + uiConfig.margin.top + (uiConfig.height / 2) - (this.offsetHeight / 2) + "px";
+                        })
+                        .style("left", function(){
+                            return offsetLeft(svgRoot) + uiConfig.margin.left + (uiConfig.width / 2) - (this.offsetWidth / 2) + "px";
+                        });
+                }
+            };
+            return it;
+        },
+
+        newTotalAmountLabel: function(root, label) {
 			var leftFooter = root.append("span");
 			leftFooter.append("label").style("color", "#999").html(label);
 			var totalAmountLabel = leftFooter.append("label").style("color", "#999").html("");
 
-			var data = null;
+			var lastUpdate = null;
 			var xScale = null;
 
 			var it = {};
 			it.update = function(update) {
-				data = update.dataStacked[0];
+				lastUpdate = update;
 				updateTotalAmount();
 			};
 			it.onXScaleUpdate = function(updatedXScale) {
@@ -693,36 +484,25 @@ function barCharts() {
 			};
 			return it;
 
-			function formatValue(n) {
-				var s = d3.format(",")(n);
-				return s.length < 3 ? s : d3.format(".3s")(n);
-			}
-			function totalValueAmountWithin(dateRange, data, getDate, getValue) {
-				var withinDomain = function(d) { return getDate(d) >= dateRange[0] && getDate(d) < dateRange[1]; };
-				return d3.sum(data.filter(withinDomain), getValue);
-			}
-			function updateTotalAmount() {
-				if (data === null || xScale === null) return;
-				var getValue = function(it) { return it.y; };
-				var getDate = function(it) { return it.x; };
-				var amount = totalValueAmountWithin(xScale.domain(), data, getDate, getValue);
-				totalAmountLabel.html(formatValue(amount));
-			}
+            function updateTotalAmount() {
+                if (lastUpdate === null || xScale === null) return;
+                if (lastUpdate.totalKey === undefined || lastUpdate.totalKey === null) {
+                    throw new Error("newTotalAmountLabel() didn't find 'totalKey' on update object.")
+                }
+                var amount = totalValueAmountWithin(xScale.domain(), lastUpdate.data, lastUpdate.key, lastUpdate.totalKey);
+                totalAmountLabel.html(formatValue(amount));
+            }
+            function totalValueAmountWithin(dateRange, data, key, totalKey) {
+                var withinDomain = function(d) { return d[key] >= dateRange[0] && d[key] < dateRange[1]; };
+                return d3.sum(data.filter(withinDomain), function(it) {
+                    return it[totalKey];
+                });
+            }
+            function formatValue(n) {
+                var s = d3.format(",")(n);
+                return s.length < 3 ? s : d3.format(".3s")(n);
+            }
 		},
-
-		percentileDropDown: function(root, data) {
-			var optionLabels = [];
-			for (var i = 100; i >= 95; i -= 0.5) {
-				optionLabels.push(i);
-			}
-			newDropDown(root, "Percentile:", optionLabels,
-				function() { return 0; },
-				function(newValue) {
-					data.setPercentile(+optionLabels[newValue] / 100);
-				}
-			);
-		},
-
 
 		// originally from http://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-and-blend-colors
 		shadeColor: function(color, percent) {
@@ -759,14 +539,5 @@ function barCharts() {
         data.forEach(function(d) { result[getDate(d)] = getValue(d); });
         return result;
     }
-
-	function delegateByIndexTo(stackedData, method, fromData, getIndex) {
-		fromData[method] = function(value) {
-			for (var i = 0; i < stackedData.length; i++) {
-				if (i !== getIndex()) stackedData[i][method](value); // skip selected index to make it send update last
-			}
-			stackedData[getIndex()][method](value);
-			fromData.sendUpdate();
-		};
-	}
 }
+}());

@@ -1,5 +1,7 @@
 //noinspection ThisExpressionReferencesGlobalObjectJS
-_.extend(this, barCharts());
+_.extend(this, d3c.common());
+//noinspection ThisExpressionReferencesGlobalObjectJS
+_.extend(this, d3c.barCharts());
 
 describe("'nothing to show' label", function () {
 	var root, svgRoot, uiConfig;
@@ -13,12 +15,12 @@ describe("'nothing to show' label", function () {
 	});
 
 	it("becomes visible if there is no data", function() {
-		var label = newEmptyBarChartLabel(root, svgRoot, uiConfig);
+		var label = newEmptyChartLabel(root, svgRoot, uiConfig);
 
-		label.update({ maxY: 123 });
+		label.update({ data: [1, 2, 3] });
 		expect(root.select("div")[0][0].getAttribute("style")).toContain("opacity: 0");
 
-		label.update({ maxY: 0 });
+		label.update({ data: [] });
 		expect(root.select("div")[0][0].getAttribute("style")).toContain("opacity: 0.9");
 	});
 });
@@ -35,7 +37,10 @@ describe("tooltip", function () {
 	});
 
 	it("becomes visible on non-null update", function() {
-		var tooltip = newBarTooltip(root, svgRoot, uiConfig, {delay: 0, delayBeforeHide: 0});
+        var getTooltipText = function(it) {
+            return "some text: " + it.value;
+        };
+		var tooltip = newBarTooltip(root, svgRoot, uiConfig, {delay: 0, delayBeforeHide: 0}, getTooltipText);
 		expect(root.select("div")[0][0].getAttribute("style")).toContain("opacity: 0");
 
 		var bar = document.createElement('rect');
@@ -53,29 +58,29 @@ describe("tooltip", function () {
 });
 
 describe("bars", function () {
-	var root, uiConfig, data, x, y;
+	var root, uiConfig, dataSource, x, y;
 	beforeEach(function() {
-		root = d3.select("body").append("span").attr("id", "bars-test");
+		root = d3.select("body").append("svg").attr("id", "bars-test");
 		uiConfig = { width: 1000, height: 500 };
-		x = newXScale(uiConfig);
-		y = newYScale(uiConfig);
-		data = newMultipleStackedData(rawCsvArray);
-	});
+		dataSource = newStackedDataSource(csvArray);
+        x = newTimeScale("date").rangeRound([0, uiConfig.width]);
+        y = newScale(dataSource.rowTotal).range([uiConfig.height, 0]);
+    });
 	afterEach(function() {
 		root.remove();
 	});
 
-	it("on data update adds svg rects to root element", function() {
+	it("add rects to svg root", function() {
 		var bars = newBars(root, uiConfig, x, y, "bars");
-		data.onUpdate([x.update, y.update, bars.update]);
+		dataSource.onUpdate([x.update, y.update, bars.update]);
 
-		data.sendUpdate();
+		dataSource.sendUpdate();
 
 		expect(root.selectAll(".layer-bars")[0].length).toEqual(3);
 		expect(root.selectAll(".layer-bars rect")[0].length).toEqual(9);
 		root.selectAll(".layer-bars rect")[0].map(function(it) {
 			expect(parseInt(it.attributes["width"].value)).toBeGreaterThan(0);
-			expect(parseInt(it.attributes["width"].value)).toBeLessThan(uiConfig.height + 1);
+			expect(parseInt(it.attributes["width"].value)).toBeLessThan(uiConfig.width + 1);
 			expect(parseInt(it.attributes["height"].value)).toBeGreaterThan(0);
 			expect(parseInt(it.attributes["height"].value)).toBeLessThan(uiConfig.height + 1);
 		});
@@ -87,21 +92,21 @@ describe("bars", function () {
 			return _.reduce(allRects, function(acc, it){ return acc + parseInt(it.attributes["height"].value); }, 0);
 		}
 		var bars = newBars(root, uiConfig, x, y, "bars");
-		data.onUpdate([x.update, y.update, bars.update]);
+		dataSource.onUpdate([x.update, y.update, bars.update]);
 
-		data.sendUpdate();
+		dataSource.sendUpdate();
 		expect(allRectsHeight()).toEqual(995);
 
-		data.setGroupIndex(1);
+		dataSource.setDataSourceIndex(1);
 		expect(allRectsHeight()).toEqual(997);
 	});
 
 	it("on data update sends categories and their colors to listeners", function() {
 		var bars = newBars(root, uiConfig, x, y, "bars");
-		data.onUpdate([x.update, y.update, bars.update]);
+		dataSource.onUpdate([x.update, y.update, bars.update]);
 		var received = captureUpdateOf(bars);
 
-		data.sendUpdate();
+		dataSource.sendUpdate();
 
 		expect(received()).toEqual([
 			{category: "java", color: '#1f77b4'},
@@ -111,27 +116,10 @@ describe("bars", function () {
 	});
 });
 
-describe("x scale", function () {
-	it("sends update when its domain is changed", function() {
-		var x = newXScale({ width: 100 });
-		var updatedX = null;
-		x.onUpdate(function(x) {
-			updatedX = x;
-		});
-		var data = {minX: date("20/04/2011"), maxX: date("30/04/2011"), dataTimeInterval: d3.time.day};
-		x.update(data);
-
-		x.setDomain([date("20/04/2011"), date("25/04/2011")]);
-
-		expect(updatedX.amountOfValues).toEqual(5);
-		expect(updatedX.domain()).toEqual([date("20/04/2011"), date("25/04/2011")]);
-	});
-});
-
-describe("bar chart data", function () {
+describe("stacked bar chart data", function () {
 	it("sends update with stacked data", function() {
-		var data = stackedData(rawCsvArray[0]);
-		var received = captureUpdateOf(data);
+        var data = withStackedData(newDataSource(parseDateBasedCsv(csvArray[0]), "date"));
+        var received = captureUpdateOf(data);
 
 		data.sendUpdate();
 
@@ -145,75 +133,12 @@ describe("bar chart data", function () {
 	});
 
 	it("sends empty update when input is empty", function() {
-		var data = stackedData("date,category,value\n\n");
+		var data = withStackedData(newDataSource(parseDateBasedCsv("date,category,value\n\n"), "date"));
 		var received = captureUpdateOf(data);
 
 		data.sendUpdate();
 
 		expect(received().dataStacked.length).toEqual(0);
-	});
-
-	it("sends min and max values", function() {
-		var data = withMinMax(stackedData(rawCsvArray[0]));
-		var received = captureUpdateOf(data);
-
-		data.sendUpdate();
-
-		expect(received().minX).toEqual(date("18/01/2013"));
-		expect(received().maxX).toEqual(date("20/01/2013"));
-		expect(received().minY).toEqual(0);
-		expect(received().maxY).toEqual(3 + 33 + 333);
-	});
-
-	it("when asked to group by different time interval, sends update with regrouped data", function() {
-		var data = groupedByTime(stackedData(rawCsvArray[0]));
-		var received = captureUpdateOf(data);
-
-		data.sendUpdate();
-		expect(received().groupByIndex).toEqual(0);
-		expect(received().dataTimeInterval).toEqual(d3.time.day);
-		expect(received().dataStacked[0][0]).toEqual({ category: "java", x: date("18/01/2013"), y: 1, y0: 0 });
-
-		data.groupBy(1);
-		expect(received().groupByIndex).toEqual(1);
-		expect(received().dataTimeInterval).toEqual(d3.time.monday);
-		expect(received().dataStacked[0][0]).toEqual({ category: "java", x: date("14/01/2013"), y: 1 + 2 + 3, y0: 0 });
-		expect(received().dataStacked[1][0]).toEqual({ category: "xml", x: date("14/01/2013"), y: 11 + 22 + 33, y0: 6 });
-		expect(received().dataStacked[2][0]).toEqual({ category: "txt", x: date("14/01/2013"), y: 111 + 222+ 333, y0: 72 });
-	});
-
-	it("when group index changes, sends update with new data", function() {
-		var data = newMultipleStackedData(rawCsvArray);
-		var received = captureUpdateOf(data);
-
-		data.sendUpdate();
-		expect(received().groupIndex).toEqual(0);
-		expect(received().dataStacked[0][0]["category"]).toEqual("java");
-		expect(received().dataStacked[0][0]["y"]).toEqual(1);
-
-		data.setGroupIndex(1);
-		expect(received().groupIndex).toEqual(1);
-		expect(received().dataStacked[0][0]["category"]).toEqual("java");
-		expect(received().dataStacked[0][0]["y"]).toEqual(11);
-	});
-
-	it("when percentile is set, sends update with filtered data", function() {
-		var data = filteredByPercentile(stackedData(rawCsvArray[0]));
-		var received = captureUpdateOf(data);
-
-		data.sendUpdate();
-		expect(received().percentile).toEqual(1.0);
-		expect(received().dataStacked.length).toEqual(3);
-		expect(received().dataStacked[0].length).toEqual(3);
-		expect(received().dataStacked[1].length).toEqual(3);
-		expect(received().dataStacked[2].length).toEqual(3);
-
-		data.setPercentile(0.5);
-		expect(received().percentile).toEqual(0.5);
-		expect(received().dataStacked.length).toEqual(3);
-		expect(received().dataStacked[0].length).toEqual(2);
-		expect(received().dataStacked[1].length).toEqual(2);
-		expect(received().dataStacked[2].length).toEqual(2);
 	});
 });
 
@@ -222,10 +147,10 @@ describe("moving average line", function() {
 	beforeEach(function() {
 		root = d3.select("body").append("span").attr("id", "bars-test");
 		uiConfig = { width: 1000, height: 500 };
-		x = newXScale(uiConfig);
-		y = newYScale(uiConfig);
-		data = newMultipleStackedData(rawCsvArray);
-	});
+		data = newStackedDataSource(csvArray);
+        x = newTimeScale("date").rangeRound([0, uiConfig.width]);
+        y = newScale(data.rowTotal).range([uiConfig.height, 0]);
+    });
 	afterEach(function() {
 		root.remove();
 	});
@@ -258,8 +183,12 @@ describe("calculating moving average for timed values", function () {
 	var getValue = function(it) { return it.value; };
 
 	it("for three day interval", function() {
+        var floor = d3.time.day.floor;
+        var nextFloor = function(value) {
+            return d3.time.day.floor(d3.time.day.offset(value, 1));
+        };
 		var movingAverageOfThreeDays = function(data) {
-			return movingAverageForTimedValues(data, d3.time.day, getDate, getValue, 3);
+			return movingAverageForTimedValues(data, floor, nextFloor, getDate, getValue, 3);
 		};
 
 		expect(movingAverageOfThreeDays([
@@ -278,8 +207,12 @@ describe("calculating moving average for timed values", function () {
 	});
 
 	it("for three month interval", function() {
-		var movingAverageOfThreeWeeks = function(data) {
-			return movingAverageForTimedValues(data, d3.time.month, getDate, getValue, 3);
+        var floor = d3.time.month.floor;
+        var nextFloor = function(value) {
+            return d3.time.month.floor(d3.time.month.offset(value, 1));
+        };
+        var movingAverageOfThreeWeeks = function(data) {
+			return movingAverageForTimedValues(data, floor, nextFloor, getDate, getValue, 3);
 		};
 
 		expect(movingAverageOfThreeWeeks([
@@ -306,8 +239,8 @@ describe("total amount label", function() {
 		root = d3.select("body").append("span").attr("id", "total-amount-test");
 		svgRoot = root.append("svg");
 		uiConfig = { width: 1000, height: 500, margin: {left: 123} };
-		x = newXScale(uiConfig);
-		data = newMultipleStackedData(rawCsvArray);
+		x = newTimeScale("date").nice().rangeRound([0, uiConfig.width]);
+		data = newStackedDataSource(csvArray);
 	});
 	afterEach(function() {
 		root.remove();
@@ -323,7 +256,7 @@ describe("total amount label", function() {
 
 		expect(root.selectAll("label")[0].length).toEqual(2);
 		expect(root.selectAll("label")[0][0].innerText).toEqual("Total amount: ");
-		expect(root.selectAll("label")[0][1].innerText).toEqual("6");
+        expect(root.selectAll("label")[0][1].innerText).toEqual(1 + 2 + 3 + 11 + 22 + 33 + 111 + 222 + 333 + "");
 	});
 });
 
@@ -333,42 +266,3 @@ describe("utilities", function() {
 		expect(shadeColor("rgb(31, 119, 180)", -0.15)).toEqual("#1a6599");
 	})
 });
-
-
-function date(s) {
-	return d3.time.format("%d/%m/%Y").parse(s);
-}
-
-function captureUpdateOf(observable) {
-	var received;
-	observable.onUpdate(function(it) {
-		received = it;
-	});
-	return function() {
-		return received;
-	}
-}
-
-var rawCsvArray = ["\
-date,category,value\n\
-18/01/2013,java,1\n\
-19/01/2013,java,2\n\
-20/01/2013,java,3\n\
-18/01/2013,xml,11\n\
-19/01/2013,xml,22\n\
-20/01/2013,xml,33\n\
-18/01/2013,txt,111\n\
-19/01/2013,txt,222\n\
-20/01/2013,txt,333\n\
-",
-"date,category,value\n\
-18/01/2013,java,11\n\
-19/01/2013,java,22\n\
-20/01/2013,java,33\n\
-18/01/2013,xml,111\n\
-19/01/2013,xml,222\n\
-20/01/2013,xml,333\n\
-18/01/2013,txt,1111\n\
-19/01/2013,txt,2222\n\
-20/01/2013,txt,3333\n\
-"];

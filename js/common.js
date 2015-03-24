@@ -574,6 +574,31 @@ function common() {
             return it;
         },
 
+        newEmptyChartLabel: function(root, svgRoot, uiConfig, threshold) {
+            if (threshold === undefined) threshold = 1;
+
+            var label = root.append("div")
+                .html("Unfortunately, there is nothing to show.")
+                .style("position", "absolute")
+                .style("opacity", 0)
+                .attr("class", "tooltip");
+            var it = {};
+            it.update = function(update) {
+                if (update.data.length >= threshold) {
+                    label.style("opacity", 0);
+                } else {
+                    label.style("opacity", 0.9)
+                        .style("top", function(){
+                            return offsetTop(svgRoot) + uiConfig.margin.top + (uiConfig.height / 2) - (this.offsetHeight / 2) + "px";
+                        })
+                        .style("left", function(){
+                            return offsetLeft(svgRoot) + uiConfig.margin.left + (uiConfig.width / 2) - (this.offsetWidth / 2) + "px";
+                        });
+                }
+            };
+            return it;
+        },
+
         newGroupByDropDown: function(root, groupedData, label, groupNames) {
             return newDropDown(root, label, groupNames,
                 function(update) {

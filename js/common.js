@@ -574,9 +574,7 @@ function common() {
             return it;
         },
 
-        newEmptyChartLabel: function(root, svgRoot, uiConfig, threshold) {
-            if (threshold === undefined) threshold = 1;
-
+        newEmptyChartLabel: function(root, svgRoot, uiConfig) {
             var label = root.append("div")
                 .html("Unfortunately, there is nothing to show.")
                 .style("position", "absolute")
@@ -584,7 +582,7 @@ function common() {
                 .attr("class", "tooltip");
             var it = {};
             it.update = function(update) {
-                if (update.data.length >= threshold) {
+                if (update.data.length > 0) {
                     label.style("opacity", 0);
                 } else {
                     label.style("opacity", 0.9)

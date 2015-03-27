@@ -169,6 +169,11 @@ function barCharts() {
             function updateUI(update) {
                 g.selectAll("g").remove();
                 g.selectAll("defs").remove();
+                g.selectAll("rect").remove();
+
+                g.append("rect")
+                    .attr("width", brushUiConfig.width).attr("height", brushUiConfig.height)
+                    .attr("style", "fill:none;stroke:black;stroke-width:1;stroke-opacity:0.1;shape-rendering:crispEdges");
 
                 var bars = newBars(g, brushUiConfig, brushXScale, brushYScale, "brushBars");
                 if (update !== null) bars.update(update);

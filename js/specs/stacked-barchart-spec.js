@@ -123,9 +123,9 @@ describe("stacked bar chart data", function () {
 		data.sendUpdate();
 
 		expect(received().dataStacked.length).toEqual(3);
-		expect(received().dataStacked[0][0]).toEqual({ category: "java", x: date("18/01/2013"), y: 1, y0: 0 });
-		expect(received().dataStacked[1][0]).toEqual({ category: "xml", x: date("18/01/2013"), y: 11, y0: 1 });
-		expect(received().dataStacked[2][0]).toEqual({ category: "txt", x: date("18/01/2013"), y: 111, y0: 1 + 11 });
+		expect(received().dataStacked[0][0]).toEqual({ category: "java", x: date("18/01/2013"), y: 3, y0: 0 });
+		expect(received().dataStacked[1][0]).toEqual({ category: "xml", x: date("18/01/2013"), y: 33, y0: 3 });
+		expect(received().dataStacked[2][0]).toEqual({ category: "txt", x: date("18/01/2013"), y: 333, y0: 3 + 33 });
 		expect(received().dataStacked[0][1]).toEqual({ category: "java", x: date("19/01/2013"), y: 2, y0: 0 });
 		expect(received().dataStacked[1][1]).toEqual({ category: "xml", x: date("19/01/2013"), y: 22, y0: 2 });
 		expect(received().dataStacked[2][1]).toEqual({ category: "txt", x: date("19/01/2013"), y: 222, y0: 2 + 22 });

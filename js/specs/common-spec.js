@@ -5,9 +5,9 @@ describe("parses csv string with date as key", function () {
     it("", function() {
         var data = parseDateBasedCsv(csv);
 
-        expect(data[0]).toEqual({ date: date("18/01/2013"), java: 1, xml: 11, txt: 111 });
+        expect(data[0]).toEqual({ date: date("18/01/2013"), java: 3, xml: 33, txt: 333 });
         expect(data[1]).toEqual({ date: date("19/01/2013"), java: 2, xml: 22, txt: 222 });
-        expect(data[2]).toEqual({ date: date("20/01/2013"), java: 3, xml: 33, txt: 333 });
+        expect(data[2]).toEqual({ date: date("20/01/2013"), java: 1, xml: 11, txt: 111 });
     });
 });
 
@@ -84,6 +84,18 @@ describe("data source", function () {
         expect(received().max["_total_"]).toEqual(3 + 33 + 333);
     });
 
+    it("can have data auto-grouped on first update", function() {
+        var dataAmountThreshold = 1;
+        var dataSource = autoGroupOnFirstUpdate(dataAmountThreshold, withMinMaxKey(
+            groupedBy(d3time([d3.time.day, d3.time.monday, d3.time.month]), newDataSource(data, "date"))
+        ));
+        var received = captureUpdateOf(dataSource);
+
+        dataSource.sendUpdate();
+
+        expect(received().groupByIndex).toEqual(2);
+    });
+
 
     it("sends min and max of all categories in all rows", function() {
         var dataSource = withMinMaxKey(withMinMaxOfRow(
@@ -111,6 +123,8 @@ describe("data source", function () {
         data.setPercentile(0.5);
         expect(received().percentile).toEqual(0.5);
         expect(received().data.length).toEqual(2);
+        expect(received().data[0].date).toEqual(date("19/01/2013"));
+        expect(received().data[1].date).toEqual(date("20/01/2013"));
     });
 });
 
@@ -161,14 +175,14 @@ function captureUpdateOf(observable) {
 
 var csvArray = ["\
 date,java,xml,txt\n\
-18/01/2013,1,11,111\n\
+18/01/2013,3,33,333\n\
 19/01/2013,2,22,222\n\
-20/01/2013,3,33,333\n\
+20/01/2013,1,11,111\n\
 ",
 "date,java,xml,txt\n\
-18/01/2013,11,111,1111\n\
+18/01/2013,33,333,3333\n\
 19/01/2013,22,222,2222\n\
-20/01/2013,33,333,3333\n\
+20/01/2013,11,111,1111\n\
 "];
 var csv = csvArray[0];
 var dataArray = csvArray.map(function(it) {

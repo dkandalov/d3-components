@@ -187,6 +187,46 @@ function common() {
             return it;
         },
 
+        autoGroupOnFirstUpdate: function(dataAmountThreshold, dataSource) {
+            var ranOnce = false;
+            var it = _.clone(dataSource);
+            var notifyListeners = observable(it);
+            dataSource.onUpdate(function(update) {
+                if (ranOnce) {
+                    notifyListeners(update);
+                    return;
+                }
+                ranOnce = true;
+
+                if (update.min === undefined) throw new Error("autoGroupOnFirstUpdate() requires min/max key values");
+
+                var min = update.min[update.key];
+                var max = update.max[update.key];
+                var groupFunction = findGroupFunctionWithValuesAmountBelow(dataAmountThreshold, update.groupFunctions, min, max);
+                if (groupFunction === undefined) {
+                    groupFunction = _.last(update.groupFunctions);
+                }
+
+                dataSource.groupBy(groupFunction);
+            });
+            it.sendUpdate = function() {
+                dataSource.sendUpdate();
+            };
+            return it;
+
+            function findGroupFunctionWithValuesAmountBelow(threshold, groupFunctions, min, max) {
+                return _.find(groupFunctions, function(groupFunction) {
+                    var count = 0;
+                    var value = min;
+                    while (value < max && count < threshold) {
+                        value = groupFunction.nextFloor(value);
+                        count++;
+                    }
+                    return count < threshold;
+                });
+            }
+        },
+
         filteredByPercentile: function(category, dataSource) {
             var percentile = 1.0;
             var lastUpdate;
@@ -212,13 +252,13 @@ function common() {
             function filter(data, percentile) {
                 if (percentile === 1.0) return data;
 
-                var sortedData = data.sort(function(a, b){ return a[category] - b[category]; });
+                var sortedData = _.clone(data).sort(function(a, b){ return a[category] - b[category]; });
                 var n = sortedData[Math.round((sortedData.length - 1) * percentile)];
                 var threshold = n[category];
 
                 var dataCopy = _.clone(data);
-                for (var i = sortedData.length - 1; i >= 0; i--) {
-                    if (sortedData[i][category] > threshold) dataCopy.splice(i, 1);
+                for (var i = dataCopy.length - 1; i >= 0; i--) {
+                    if (dataCopy[i][category] > threshold) dataCopy.splice(i, 1);
                 }
                 return dataCopy;
             }

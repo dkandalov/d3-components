@@ -85,7 +85,7 @@ function seriesCharts() {
             };
             it.setCategoryVisible = function(category, isVisible) {
                 var opacity = isVisible ? null : "none";
-                root.selectAll("[id=" + category + "]").style("display", opacity);
+                root.selectAll("[id=\"" + category + "\"]").style("display", opacity);
             };
             it.onXScaleUpdate = function(updatedXScale) {
                 xScale = updatedXScale;

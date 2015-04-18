@@ -523,7 +523,6 @@ getJasmineRequireObj().Env = function(j$) {
       return suite.getFullName() + ' ' + spec.description;
     };
 
-    // TODO: we may just be able to pass in the fn instead of wrapping here
     var buildExpectationResult = j$.buildExpectationResult,
         exceptionFormatter = new j$.ExceptionFormatter(),
         expectationResultFactory = function(attrs) {
@@ -533,7 +532,6 @@ getJasmineRequireObj().Env = function(j$) {
           return buildExpectationResult(attrs);
         };
 
-    // TODO: fix this naming, and here's where the value comes in
     this.catchExceptions = function(value) {
       catchExceptions = !!value;
       return catchExceptions;
@@ -1361,7 +1359,6 @@ getJasmineRequireObj().Expectation = function() {
         expected = expected[0];
       }
 
-      // TODO: how many of these params are needed?
       this.addExpectationResult(
         result.pass,
         {
@@ -1369,7 +1366,7 @@ getJasmineRequireObj().Expectation = function() {
           passed: result.pass,
           message: message,
           actual: this.actual,
-          expected: expected // TODO: this may need to be arrayified/sliced
+          expected: expected
         }
       );
     };
@@ -1388,8 +1385,6 @@ getJasmineRequireObj().Expectation = function() {
 
     var expect = new Expectation(options);
 
-    // TODO: this would be nice as its own Object - NegativeExpectation
-    // TODO: copy instead of mutate options
     options.isNot = true;
     expect.not = new Expectation(options);
 
@@ -1399,7 +1394,6 @@ getJasmineRequireObj().Expectation = function() {
   return Expectation;
 };
 
-//TODO: expectation result may make more sense as a presentation of an expectation.
 getJasmineRequireObj().buildExpectationResult = function() {
   function buildExpectationResult(options) {
     var messageFormatter = options.messageFormatter || function() {},
@@ -1800,8 +1794,6 @@ getJasmineRequireObj().QueueRunner = function(j$) {
     function handleException(e, queueableFn) {
       onException(e, queueableFn);
       if (!self.catchException(e)) {
-        //TODO: set a var when we catch an exception and
-        //use a finally block to close the loop in a nice way..
         throw e;
       }
     }
@@ -1862,7 +1854,6 @@ getJasmineRequireObj().SpyRegistry = function(j$) {
       }
 
       if (obj[methodName] && j$.isSpy(obj[methodName])) {
-        //TODO?: should this return the current spy? Downside: may cause user confusion about spy state
         throw new Error(methodName + ' has already been spied upon');
       }
 
@@ -2176,8 +2167,6 @@ getJasmineRequireObj().Timer = function() {
 };
 
 getJasmineRequireObj().matchersUtil = function(j$) {
-  // TODO: what to do about jasmine.pp not being inject? move to JSON.stringify? gut PrettyPrinter?
-
   return {
     equals: function(a, b, customTesters) {
       customTesters = customTesters || [];

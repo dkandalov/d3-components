@@ -229,13 +229,11 @@ function common() {
 
         filteredByPercentile: function(category, dataSource) {
             var percentile = 1.0;
-            var lastUpdate;
             var it = _.clone(dataSource);
             var notifyListeners = observable(it);
             dataSource.onUpdate(function(update) {
-                lastUpdate = update;
-                var filteredData = filter(lastUpdate.data, percentile);
-                notifyListeners(extendCopyOf(lastUpdate, {
+                var filteredData = filter(update.data, category, percentile);
+                notifyListeners(extendCopyOf(update, {
                     percentile: percentile,
                     data: filteredData
                 }));
@@ -249,7 +247,7 @@ function common() {
             };
             return it;
 
-            function filter(data, percentile) {
+            function filter(data, category, percentile) {
                 if (percentile === 1.0) return data;
 
                 var sortedData = _.clone(data).sort(function(a, b){ return a[category] - b[category]; });
@@ -612,6 +610,51 @@ function common() {
             it.locationLeft = function() { isLeftLocation = true; return it; };
             it.locationRight = function() { isLeftLocation = false; return it; };
             return it;
+        },
+
+        newMesh: function(root, uiConfig, yScale, xScale) {
+            if (uiConfig.meshCss === undefined) uiConfig.meshCss = "mesh";
+
+            // create subroot so that when mesh updated it still rendered before chart and stays behind
+            root = root.append("g");
+
+            var xMesh = d3.svg.axis().scale(yScale).orient("left").tickFormat("").tickSize(-uiConfig.width);
+            xMesh.update = function() {
+                root.selectAll(".x." + uiConfig.meshCss.replace(" ", ".")).remove();
+                root.append("g")
+                    .attr("class", "x " + uiConfig.meshCss)
+                    .attr("transform", function() { return ""; })
+                    .call(xMesh);
+                root.selectAll("g")
+                    .filter(function(d){ return d === 0; })
+                    .classed("hidden", true);
+            };
+            if (xScale !== undefined) {
+                var yMesh = d3.svg.axis().scale(xScale).orient("bottom").tickFormat("").tickSize(uiConfig.height);
+                yMesh.update = function() {
+                    root.selectAll(".y." + uiConfig.meshCss.replace(" ", ".")).remove();
+                    root.append("g")
+                        .attr("class", "y " + uiConfig.meshCss)
+                        .attr("transform", function() { return ""; })
+                        .call(yMesh);
+                    root.selectAll("g")
+                        .filter(function(d){ return d === 0; })
+                        .classed("hidden", true);
+                };
+                yMesh.onXScaleUpdate = function() {
+                    root.select(".y." + uiConfig.meshCss.replace(" ", ".")).call(yMesh);
+                };
+            }
+
+            return {
+                update: function() {
+                    xMesh.update();
+                    if (yMesh !== undefined) yMesh.update();
+                },
+                onXScaleUpdate: function() {
+                    if (yMesh !== undefined) yMesh.onXScaleUpdate();
+                }
+            };
         },
 
         newEmptyChartLabel: function(root, svgRoot, uiConfig) {

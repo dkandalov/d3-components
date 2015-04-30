@@ -234,9 +234,9 @@ function barCharts() {
             var stackedDataSource = withStackedData(
                 autoGroupOnFirstUpdate(100,
                 clampedMin(0, withMinMax(rowTotal,
+                filteredByPercentile(rowTotal,
                 withRowTotal(rowTotal,
                 withMinMaxKey(
-                filteredByPercentile(rowTotal,
                 groupedBy(d3time([d3.time.day, d3.time.monday, d3.time.month]),
                 dataSource
             ))))))));
@@ -252,8 +252,8 @@ function barCharts() {
             var stackedDataSource = withStackedData(
                 autoGroupOnFirstUpdate(100,
                 clampedMin(0, withMinMax(rowTotal,
-                withRowTotal(rowTotal,
                 filteredByPercentile(rowTotal,
+                withRowTotal(rowTotal,
                 withMinMaxKey(
                 withDataSourceIndexAsGroup(groupFunctions,
                 dataSource
@@ -387,7 +387,7 @@ function barCharts() {
                 var legend = root.append("g").attr("class", "legend")
                     .attr("transform", "translate(" + position.x + "," + position.y + ")");
 
-                if (items.length === 0) {
+                if (items.length <= 1) {
                     legend.style("opacity", 0);
                 } else {
                     legend.style("opacity", 0.9)

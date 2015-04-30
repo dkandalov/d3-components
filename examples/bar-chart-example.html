@@ -69,6 +69,7 @@ date,java,xml,txt\n\
         var xAxis = newXAxis(svg, x, uiConfig);
         var yAxis = newYAxis(svg, y).label("Change size");
         var xBrush = newXBrush(svg, uiConfig, x, brushHeight);
+        var mesh = newMesh(svg, uiConfig, y);
         var legend = newLegend(svg, {x: uiConfig.width - 50, y: 20});
 
         var controlsPanel = newControlsPanel(root, uiConfig);
@@ -82,7 +83,7 @@ date,java,xml,txt\n\
             newBarTooltip(root, svgRoot, uiConfig, {css: "tooltip"}, tooltipWithDateKeyAndCategory).update,
             newBarShading().update]);
 
-        data.onUpdate([x.update, y.update, bars.update, xAxis.update, yAxis.update, xBrush.update, groupBy.update,
+        data.onUpdate([x.update, y.update, bars.update, xAxis.update, yAxis.update, xBrush.update, mesh.update, groupBy.update,
             newEmptyChartLabel(root, svgRoot, uiConfig).update]);
         x.onUpdate([bars.onXScaleUpdate, xAxis.onXScaleUpdate]);
         data.sendUpdate();

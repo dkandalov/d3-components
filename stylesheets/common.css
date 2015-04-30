@@ -62,3 +62,12 @@ div.helpTooltip {
     font-family: 'Lucida Grande','Calibri',Helvetica,Arial,sans-serif;
     height: 18px;
 }
+
+.mesh path {
+    opacity: 0;
+}
+.mesh {
+    opacity: 0.7;
+    stroke: #aaa;
+    stroke-dasharray: 2,2;
+}

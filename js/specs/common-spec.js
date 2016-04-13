@@ -70,7 +70,7 @@ describe("data source", function () {
 
     it("sends min and max of categories total in all rows", function() {
         var dataSource = withMinMaxKey(
-            clampedMin(0, withMinMax("_total_",
+            clampMinMax(0, undefined, withMinMax("_total_",
             withRowTotal("_total_",
             newDataSource(parseDateBasedCsv(csvArray[0]), "date"
         )))));

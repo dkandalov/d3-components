@@ -7,8 +7,8 @@ function common() {
             eventName = (eventName === undefined ? "onUpdate" : eventName);
             var listeners = [];
             object[eventName] = function(newListeners) {
-                if (_.isArray(newListeners)) listeners = newListeners;
-                else listeners = [newListeners];
+                if (!_.isArray(newListeners)) newListeners = [newListeners];
+                listeners = listeners.concat(newListeners);
             };
             return function(update) {
                 for (var i = 0; i < listeners.length; i++) {
@@ -38,7 +38,17 @@ function common() {
             it.contain = function(value) {
                 return it.contains(value);
             };
+            it.remove = function(value) {
+                delete it[keyFunction(value)];
+                return it;
+            };
             return it;
+        },
+        clamp: function(value, min, max) {
+            if (max === undefined) max = value;
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
         },
 
         offsetTop: function(element) {
@@ -88,6 +98,22 @@ function common() {
                     categories: categories
                 });
             };
+            return it;
+        },
+        combineObjects: function(objects) {
+            var it = {};
+            var firstObject = objects[0];
+            var allKeys = _.keys(firstObject);
+            var attributeNames = _.filter(allKeys, function(key){ return !_.isFunction(firstObject[key]); });
+            var functionNames = _.filter(allKeys, function(key){ return _.isFunction(firstObject[key]); });
+            attributeNames.forEach(function(attribute) {
+                it[attribute] = firstObject[attribute];
+            });
+            functionNames.forEach(function(f) {
+                it[f] = function(args) {
+                    objects.forEach(function(object){ object[f](args); });
+                };
+            });
             return it;
         },
         dataSourceSwitcher: function(dataSources) {
@@ -250,13 +276,15 @@ function common() {
             function filter(data, category, percentile) {
                 if (percentile === 1.0) return data;
 
-                var sortedData = _.clone(data).sort(function(a, b){ return a[category] - b[category]; });
+                var sortedData = _.clone(data).sort(function(a, b){
+                    return Math.abs(a[category]) - Math.abs(b[category]);
+                });
                 var n = sortedData[Math.round((sortedData.length - 1) * percentile)];
-                var threshold = n[category];
+                var threshold = Math.abs(n[category]);
 
                 var dataCopy = _.clone(data);
                 for (var i = dataCopy.length - 1; i >= 0; i--) {
-                    if (dataCopy[i][category] > threshold) dataCopy.splice(i, 1);
+                    if (Math.abs(dataCopy[i][category]) > threshold) dataCopy.splice(i, 1);
                 }
                 return dataCopy;
             }
@@ -299,12 +327,15 @@ function common() {
             return it;
         },
 
-        clampedMin: function(value, minMaxDataSource) {
-            return minMaxDataSource.clampMin(value);
+        clampMinMax: function(min, max, minMaxDataSource) {
+            return minMaxDataSource.clamp(min, max);
+        },
+        includeMinMax: function(min, max, minMaxDataSource) {
+            return minMaxDataSource.include(min, max);
         },
         withMinMax: function(category, dataSource) {
-            var clampMin;
-            var clampMax;
+            var clamp = {};
+            var include = {};
 
             var it = _.clone(dataSource);
             var notifyListeners = observable(it);
@@ -312,23 +343,30 @@ function common() {
                 if (update.min === undefined) update.min = {};
                 if (update.max === undefined) update.max = {};
 
-                if (clampMin !== undefined) update.min[category] = clampMin;
+                if (clamp.min !== undefined) update.min[category] = clamp.min;
                 else update.min[category] = d3.min(update.data, function(row) { return row[category]; });
 
-                if (clampMax !== undefined) update.max[category] = clampMax;
+                if (clamp.max !== undefined) update.max[category] = clamp.max;
                 else update.max[category] = d3.max(update.data, function(row) { return row[category]; });
+
+                if (include.min !== undefined && include.min < update.min[category]) {
+                    update.min[category] = include.min;
+                }
+                if (include.max !== undefined && include.max > update.max[category]) {
+                    update.max[category] = include.max;
+                }
 
                 notifyListeners(update);
             });
             it.sendUpdate = function() {
                 dataSource.sendUpdate();
             };
-            it.clampMin = function(value) {
-                clampMin = value;
+            it.clamp = function(min, max) {
+                clamp = {min: min, max: max};
                 return it;
             };
-            it.clampMax = function(value) {
-                clampMax = value;
+            it.include = function(min, max) { 
+                include = {min: min, max: max};
                 return it;
             };
             return it;
@@ -625,9 +663,6 @@ function common() {
                     .attr("class", "x " + uiConfig.meshCss)
                     .attr("transform", function() { return ""; })
                     .call(xMesh);
-                root.selectAll("g")
-                    .filter(function(d){ return d === 0; })
-                    .classed("hidden", true);
             };
             if (xScale !== undefined) {
                 var yMesh = d3.svg.axis().scale(xScale).orient("bottom").tickFormat("").tickSize(uiConfig.height);
@@ -637,24 +672,30 @@ function common() {
                         .attr("class", "y " + uiConfig.meshCss)
                         .attr("transform", function() { return ""; })
                         .call(yMesh);
-                    root.selectAll("g")
-                        .filter(function(d){ return d === 0; })
-                        .classed("hidden", true);
                 };
                 yMesh.onXScaleUpdate = function() {
                     root.select(".y." + uiConfig.meshCss.replace(" ", ".")).call(yMesh);
                 };
             }
 
-            return {
+            var it = {
                 update: function() {
                     xMesh.update();
                     if (yMesh !== undefined) yMesh.update();
                 },
                 onXScaleUpdate: function() {
                     if (yMesh !== undefined) yMesh.onXScaleUpdate();
+                },
+                xTicks: function(value) {
+                    xMesh.ticks(value);
+                    return it;
+                },
+                yTicks: function(value) {
+                    if (yMesh !== undefined) yMesh.ticks(value);
+                    return it;
                 }
             };
+            return it;
         },
 
         newEmptyChartLabel: function(root, svgRoot, uiConfig) {
@@ -702,6 +743,7 @@ function common() {
             if (settings.descriptionCss === undefined) settings.descriptionCss = "helpDescription";
             if (settings.tooltipPad === undefined) settings.tooltipPad = 0;
 
+            // from http://getbootstrap.com/components/#glyphicons
             var helpButtonImage = "iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAATZJREFUeNq8VtERwiAMLZ7/skFxAusGHaEjMIIjOEJH6AgdoSPUCWSEboCkBg/RQqBa7t6V6+XlQUgITGtdUAZjTJiP8H4rw1ckByC0BHTcgkMwXYBCGxH0tSDAkawTARxOEjKjMhgzRCyAWwWFUGRaIWIx+WJ+uMYfiLg749+EYmfSGTSYIALnfezM3oSQGCLIQGbKCFe4QqHdDJ7j2k9lsIntyhqG6uTiOOycwxbO/2uozsBmjxVfBmq6NjYc502RPkrUmEORmlHSC52K2Nc5QjKjuJOFRu8epBa33CXGe3DmkNYHIk8xXNmdSLhhkdrEOBF5R+phrsGc3jZ0PXFlZ0NiAJgTOf2r8RGuIP00/bh+KDsSqZdqjlCb2yYqr4bS28RmjW/TVr7p4+Rfzy221QPyIcAAaxoAnJVfnkgAAAAASUVORK5CYII=";
 
             var tooltipIsVisible = false;
@@ -732,6 +774,19 @@ function common() {
                     .style({color: "#999", display: "inline-block", "vertical-align": "middle"})
                     .html(helpDescription);
             }
+        },
+
+        enableShortcutToHideHeaderFooter: function(target, elementIds) {
+            if (elementIds === undefined) elementIds = ["header", "footer"];
+            target.addEventListener("keypress", function(event) {
+                var key = (event.key !== undefined ? event.key : event.keyCode);
+                if (event.ctrlKey && key === 8) { // 'h'
+                    elementIds.forEach(function(id) {
+                        var element = d3.select("#" + id);
+                        element.classed("hidden", !element.classed("hidden"));
+                    })
+                }
+            });
         }
     };
 }

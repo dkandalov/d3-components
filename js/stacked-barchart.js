@@ -22,7 +22,7 @@ function barCharts() {
 		newBarTooltip: function(root, svgRoot, uiConfig, settings, getTooltipText) {
 			if (settings === undefined) settings = {};
 			if (settings.css === undefined) settings.css = "";
-			if (settings.delay === undefined) settings.delay = 1500;
+			if (settings.delay === undefined) settings.delay = 500;
 			if (settings.delayBeforeHide === undefined) settings.delayBeforeHide = 100;
 
 			var div = root.append("div")
@@ -81,7 +81,7 @@ function barCharts() {
         },
 
         newBars: function(root, uiConfig, xScale, yScale, idPostfix) {
-			idPostfix = (idPostfix === undefined ? "-bars" : "-" + idPostfix);
+			idPostfix = (idPostfix === undefined ? "-bars-" + _.uniqueId() : "-" + idPostfix);
 			var color = uiConfig.color || d3.scale.category20();
             var barWidth = uiConfig.barWidth || "10px";
 			var dataStacked;
@@ -111,9 +111,9 @@ function barCharts() {
 					.enter().append("rect")
 					.attr("clip-path", "url(#clip" + idPostfix + ")")
 					.attr("x", function(d) { return xScale(d.x); })
-					.attr("y", function(d) { return yScale(d.y0 + d.y); })
-					.attr("width", xScale.valueSize || barWidth)
-					.attr("height", function(d) { return yScale(d.y0) - yScale(d.y0 + d.y); });
+					.attr("y", function(d) { return d.y > 0 ? yScale(d.y0 + d.y) : yScale(d.y0); })
+                    .attr("width", xScale.valueSize || barWidth)
+					.attr("height", function(d) { return Math.abs(yScale(d.y0) - yScale(d.y0 + d.y)); });
 
 				rect.on("mouseover", function(d) {
 					notifyHoverListeners({event: "mouseover", bar: this, value: d.y, key: d.x, category: getCategory(d)});
@@ -175,8 +175,15 @@ function barCharts() {
                     .attr("width", brushUiConfig.width).attr("height", brushUiConfig.height)
                     .attr("style", "fill:none;stroke:black;stroke-width:1;stroke-opacity:0.1;shape-rendering:crispEdges");
 
-                var bars = newBars(g, brushUiConfig, brushXScale, brushYScale, "brushBars");
-                if (update !== null) bars.update(update);
+                if (uiConfig.visibleBars) {
+                    var bars = newBars(g, brushUiConfig, brushXScale, brushYScale, "brushBars-" + _.uniqueId());
+                    if (update !== null) bars.update(update);
+                }
+
+                if (uiConfig.visibleLineSeries) {
+                    var lineSeries = newLineSeries(g, brushXScale, brushYScale, uiConfig, "brushSeries-" + _.uniqueId());
+                    if (update !== null) lineSeries.update(update);
+                }
 
                 g.append("g")
                     .attr("class", "x brush")
@@ -233,7 +240,7 @@ function barCharts() {
             var rowTotal = "_row_total_";
             var stackedDataSource = withStackedData(
                 autoGroupOnFirstUpdate(100,
-                clampedMin(0, withMinMax(rowTotal,
+                clampMinMax(0, undefined, withMinMax(rowTotal,
                 filteredByPercentile(rowTotal,
                 withRowTotal(rowTotal,
                 withMinMaxKey(
@@ -251,7 +258,7 @@ function barCharts() {
             var rowTotal = "_row_total_";
             var stackedDataSource = withStackedData(
                 autoGroupOnFirstUpdate(100,
-                clampedMin(0, withMinMax(rowTotal,
+                clampMinMax(0, undefined, withMinMax(rowTotal,
                 filteredByPercentile(rowTotal,
                 withRowTotal(rowTotal,
                 withMinMaxKey(
@@ -263,17 +270,27 @@ function barCharts() {
 		},
 
 
-        percentileDropDown: function(root, data) {
+        percentileDropDown: function(root, data, initialValue) {
+            if (initialValue === undefined) initialValue = 1.0;
+
             var optionLabels = [];
-            for (var i = 100; i >= 95; i -= 0.5) {
+            for (var i = 100; i >= 80; i -= 0.5) {
                 optionLabels.push(i);
             }
-            newDropDown(root, "Percentile:", optionLabels,
-                function() { return 0; },
+
+            var it = newDropDown(root, "Percentile:", optionLabels,
+                function(value) {
+                    for (var i = 0; i < optionLabels.length; i++) {
+                        if (value === (+optionLabels[i] / 100)) return i;
+                    }
+                    return 0;
+                },
                 function(newValue) {
                     data.setPercentile(+optionLabels[newValue] / 100);
                 }
             );
+            it.update(initialValue);
+            return it;
         },
 
         newGroupIndexDropDown: function(root, stackedData, label, groupNames) {

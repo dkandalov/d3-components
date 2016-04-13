@@ -16,8 +16,9 @@ function seriesCharts() {
                         category: category,
                         values: update.data.map(function(d) {
                             var row = {};
+                            row["key"] = update.key;
                             row[update.key] = d[update.key];
-                            row["value"] = d[category];
+                            row[category] = d[category];
                             return row;
                         })
                     };
@@ -32,6 +33,7 @@ function seriesCharts() {
 
         newLineSeries: function(root, xScale, yScale, uiConfig, idPostfix) {
             idPostfix = (idPostfix === undefined ? "" : "-" + idPostfix);
+            var color = uiConfig.color || d3.scale.category20b();
 
             var interpolation = "basis";
             var lastUpdate;
@@ -39,7 +41,6 @@ function seriesCharts() {
 
             root.append("defs").append("clipPath").attr("id", "clip" + idPostfix)
                 .append("rect").attr("width", uiConfig.width).attr("height", uiConfig.height).attr("x", 1);
-            var line = createLine(xScale, yScale, interpolation);
 
             var it = {};
             var notifyListeners = observable(it);
@@ -53,15 +54,16 @@ function seriesCharts() {
                     .enter().append("g")
                     .attr("class", "series" + idPostfix);
 
-                line = createLine(xScale, yScale, interpolation);
-                uiConfig.color.domain(_.pluck(update.seriesData, "category"));
+                // color.domain(_.pluck(update.seriesData, "category"));
 
                 series.append("path")
                     .attr("class", "line")
-                    .attr("d", function(d){ return line(d.values); })
+                    .attr("d", function(d){
+                        return createLine(xScale, yScale, interpolation, d.category)(d.values);
+                    })
                     .attr("clip-path", "url(#clip" + idPostfix + ")")
                     .attr("id", function(d){ return d.category; })
-                    .style("stroke", function(d){ return uiConfig.color(d.category); });
+                    .style("stroke", function(d){ return color(d.category); });
 
                 notifyListeners();
             };
@@ -89,16 +91,19 @@ function seriesCharts() {
             };
             it.onXScaleUpdate = function(updatedXScale) {
                 xScale = updatedXScale;
-                root.selectAll(".series" + idPostfix).data(lastUpdate.data).selectAll("path")
-                    .attr("d", function(d){ return line(d.values); });
+                root.selectAll(".series" + idPostfix)
+                    .data(lastUpdate.data).selectAll("path")
+                    .attr("d", function(d){
+                        return createLine(xScale, yScale, interpolation, d.category)(d.values);
+                    });
             };
             return it;
 
-            function createLine(xScale, yScale, interpolation) {
+            function createLine(xScale, yScale, interpolation, category) {
                 return d3.svg.line()
                     .interpolate(interpolation)
-                    .x(function(d) { return xScale.getAndApply(d); })
-                    .y(function(d) { return yScale.getAndApply(d); });
+                    .x(function(d) { return xScale(d[d.key]); })
+                    .y(function(d) { return yScale(d[category]); });
             }
         },
 
